@@ -1,4 +1,5 @@
 import Task from '../models/Task.js';
+import { logAudit } from '../utils/auditLogger.js';
 
 export const createTask = async (req, res) => {
   try {
@@ -16,6 +17,12 @@ export const createTask = async (req, res) => {
       status,
       priority,
       dueDate,
+    });
+    
+    // Log audit event asynchronously
+    logAudit('CREATE_TASK', req.user?.id, task._id.toString(), {
+      title: task.title,
+      status: task.status
     });
     
     return res.status(201).json(task);
@@ -75,6 +82,11 @@ export const updateTask = async (req, res) => {
       return res.status(404).json({ message: 'Task not found' });
     }
     
+    // Log audit event asynchronously
+    logAudit('UPDATE_TASK', req.user?.id, task._id.toString(), {
+      updatedFields: updates
+    });
+    
     return res.status(200).json(task);
   } catch (error) {
     if (error.name === 'ValidationError') {
@@ -92,6 +104,11 @@ export const deleteTask = async (req, res) => {
     if (!task) {
       return res.status(404).json({ message: 'Task not found' });
     }
+    
+    // Log audit event asynchronously
+    logAudit('DELETE_TASK', req.user?.id, id, {
+      deletedTaskId: id
+    });
     
     return res.status(200).json({ message: 'Task deleted successfully' });
   } catch (error) {
