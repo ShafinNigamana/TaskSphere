@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+  import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 
 function TeamDetailPage() {
@@ -91,4 +91,4 @@ function TeamDetailPage() {
   );
 }
 
-export default TeamDetailPage;
+export default TeamDetailPage;
