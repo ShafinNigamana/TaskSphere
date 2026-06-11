@@ -16,6 +16,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getTasksByTeam, updateTaskStatus } from '../../services/taskService';
+import { useAuth } from '../../context/AuthContext';
 
 // Column definitions — maps to Task model status enum
 const COLUMNS = [
@@ -24,10 +25,17 @@ const COLUMNS = [
   { id: 'done', title: 'Done' },
 ];
 
+// Filter definitions
+const FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'my-tasks', label: 'My Tasks' },
+  { id: 'high-priority', label: 'High Priority' },
+  { id: 'overdue', label: 'Overdue' },
+];
+
 // ─── Helpers ───────────────────────────────────────────────
 
 function getInitials(task) {
-  // No assignee data populated in current model, show "U"
   return 'U';
 }
 
@@ -41,6 +49,12 @@ function getPriorityClass(priority) {
   if (priority === 'high') return 'kanban-badge--priority kanban-badge--priority-high';
   if (priority === 'low') return 'kanban-badge--priority kanban-badge--priority-low';
   return 'kanban-badge--priority';
+}
+
+function isOverdue(task) {
+  if (!task.dueDate) return false;
+  if (task.status === 'done') return false;
+  return new Date(task.dueDate) < new Date();
 }
 
 // ─── TaskCard (rendered inside SortableContext) ────────────
@@ -128,25 +142,30 @@ function KanbanColumn({ column, tasks, isOver }) {
 
 function TeamDetailPage() {
   const { id: teamId } = useParams();
+  const { user } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTask, setActiveTask] = useState(null);
   const [overColumnId, setOverColumnId] = useState(null);
+  const [activeFilter, setActiveFilter] = useState('all');
 
-  // Track if this is the first load (show full loading) vs polling
+  // Track loading + dragging state for polling control
   const hasLoadedOnce = useRef(false);
+  const isDragging = useRef(false);
 
   // ── Data fetching ──
 
   const fetchTasks = useCallback(async () => {
+    // Skip polling refresh while user is dragging to avoid state conflicts
+    if (isDragging.current) return;
+
     try {
       const data = await getTasksByTeam(teamId);
       setTasks(data);
       setError(null);
       hasLoadedOnce.current = true;
     } catch (err) {
-      // Only show error if first load fails
       if (!hasLoadedOnce.current) {
         setError('Failed to load board.');
       }
@@ -166,6 +185,25 @@ function TeamDetailPage() {
     return () => clearInterval(interval);
   }, [fetchTasks]);
 
+  // ── Filtering ──
+
+  function applyFilter(allTasks) {
+    switch (activeFilter) {
+      case 'my-tasks':
+        return user?._id
+          ? allTasks.filter((t) => t.assigneeId === user._id)
+          : allTasks;
+      case 'high-priority':
+        return allTasks.filter((t) => t.priority === 'high');
+      case 'overdue':
+        return allTasks.filter((t) => isOverdue(t));
+      default:
+        return allTasks;
+    }
+  }
+
+  const filteredTasks = applyFilter(tasks);
+
   // ── Drag and drop ──
 
   const sensors = useSensors(
@@ -174,27 +212,24 @@ function TeamDetailPage() {
     })
   );
 
-  // Find which column a task belongs to
   function findColumnForTask(taskId) {
     const task = tasks.find((t) => t._id === taskId);
     return task ? task.status : null;
   }
 
-  // Determine the drop target column from the over object
   function getTargetColumn(over) {
     if (!over) return null;
 
-    // Check if dropped directly on a column ID
     const columnIds = COLUMNS.map((c) => c.id);
     if (columnIds.includes(over.id)) {
       return over.id;
     }
 
-    // Otherwise it's a task — find which column that task is in
     return findColumnForTask(over.id);
   }
 
   function handleDragStart(event) {
+    isDragging.current = true;
     const task = tasks.find((t) => t._id === event.active.id);
     setActiveTask(task || null);
   }
@@ -205,6 +240,7 @@ function TeamDetailPage() {
   }
 
   async function handleDragEnd(event) {
+    isDragging.current = false;
     setActiveTask(null);
     setOverColumnId(null);
 
@@ -219,7 +255,7 @@ function TeamDetailPage() {
     const currentStatus = findColumnForTask(taskId);
     if (currentStatus === newStatus) return;
 
-    // Update local state immediately
+    // Optimistic update — move card immediately
     setTasks((prev) =>
       prev.map((t) =>
         t._id === taskId ? { ...t, status: newStatus } : t
@@ -230,7 +266,7 @@ function TeamDetailPage() {
     try {
       await updateTaskStatus(taskId, newStatus);
     } catch (err) {
-      // Revert on failure
+      // Rollback — restore previous status on failure
       setTasks((prev) =>
         prev.map((t) =>
           t._id === taskId ? { ...t, status: currentStatus } : t
@@ -240,14 +276,15 @@ function TeamDetailPage() {
   }
 
   function handleDragCancel() {
+    isDragging.current = false;
     setActiveTask(null);
     setOverColumnId(null);
   }
 
-  // ── Group tasks by status ──
+  // ── Group tasks by status (uses filtered set) ──
 
   function getTasksForColumn(columnId) {
-    return tasks.filter((t) => t.status === columnId);
+    return filteredTasks.filter((t) => t.status === columnId);
   }
 
   // ── Render ──
@@ -273,8 +310,20 @@ function TeamDetailPage() {
       <div className="kanban-header">
         <h1 className="kanban-title">Board</h1>
         <p className="kanban-subtitle">
-          {tasks.length} {tasks.length === 1 ? 'task' : 'tasks'} across {COLUMNS.length} columns
+          {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'} across {COLUMNS.length} columns
         </p>
+        <div className="kanban-filters">
+          {FILTERS.map((filter) => (
+            <button
+              key={filter.id}
+              type="button"
+              className={`kanban-chip ${activeFilter === filter.id ? 'kanban-chip--active' : ''}`}
+              onClick={() => setActiveFilter(filter.id)}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <DndContext
