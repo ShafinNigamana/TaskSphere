@@ -56,6 +56,16 @@ function MainLayout() {
             >
               Tasks
             </NavLink>
+            {user?.role === 'manager' && (
+              <NavLink 
+                to="/reports" 
+                className={({ isActive }) => 
+                  `nav-link ${isActive ? 'nav-link--active' : ''}`
+                }
+              >
+                Reports
+              </NavLink>
+            )}
           </nav>
         </aside>
 

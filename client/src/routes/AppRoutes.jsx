@@ -9,6 +9,7 @@ import TaskDetailPage from "../pages/Tasks/TaskDetailPage";
 import HealthPage from "../pages/System/HealthPage";
 import MainLayout from "../layouts/MainLayout";
 import ProtectedRoute from "../components/ProtectedRoute";
+import ReportsPage from "../pages/Reports/ReportsPage";
 
 function AppRoutes() {
   return (
@@ -32,6 +33,14 @@ function AppRoutes() {
         <Route path="/teams/:id" element={<TeamDetailPage />} />
         <Route path="/tasks" element={<TasksPage />} />
         <Route path="/tasks/:id" element={<TaskDetailPage />} />
+        <Route 
+          path="/reports" 
+          element={
+            <ProtectedRoute allowedRoles={['manager']}>
+              <ReportsPage />
+            </ProtectedRoute>
+          } 
+        />
       </Route>
     </Routes>
   );
