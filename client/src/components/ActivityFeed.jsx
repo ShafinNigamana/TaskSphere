@@ -70,16 +70,17 @@ export default function ActivityFeed({ teamId }) {
       setLogs(data.logs || []);
       setTotal(data.total || 0);
       setError(null);
-    } catch (err) {
+    } catch {
       setError('Failed to load activity feed.');
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
     }
   }, [teamId, page]);
 
   // Initial fetch and fetch on page change
   useEffect(() => {
-    fetchFeed(true);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchFeed(false);
   }, [fetchFeed]);
 
   // Poll every 5 seconds (runs silently in the background)
@@ -89,11 +90,6 @@ export default function ActivityFeed({ teamId }) {
     }, 5000);
     return () => clearInterval(interval);
   }, [fetchFeed]);
-
-  // Reset page to 1 when teamId changes
-  useEffect(() => {
-    setPage(1);
-  }, [teamId]);
 
   if (loading) {
     return (

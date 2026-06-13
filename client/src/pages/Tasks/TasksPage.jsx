@@ -13,7 +13,7 @@ function TasksPage() {
         setError(null);
         const data = await getTasks();
         setTasks(data);
-      } catch (err) {
+      } catch {
         setError('Failed to load tasks.');
       } finally {
         setLoading(false);

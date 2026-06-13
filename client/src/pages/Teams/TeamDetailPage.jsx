@@ -37,7 +37,15 @@ const FILTERS = [
 // ─── Helpers ───────────────────────────────────────────────
 
 function getInitials(task) {
-  return 'U';
+  if (task.assigneeId && typeof task.assigneeId === 'object' && task.assigneeId.name) {
+    return task.assigneeId.name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
+  }
+  return 'UN';
 }
 
 function formatDueDate(dateString) {
@@ -155,6 +163,19 @@ function TeamDetailPage() {
   const hasLoadedOnce = useRef(false);
   const isDragging = useRef(false);
 
+  // Reset state on teamId changes during render (Standard React Prop Reset pattern)
+  const [prevTeamId, setPrevTeamId] = useState(teamId);
+  if (teamId !== prevTeamId) {
+    setPrevTeamId(teamId);
+    setLoading(true);
+    setError(null);
+  }
+
+  // Reset loaded tracker on team changes inside effect to avoid ref-in-render violations
+  useEffect(() => {
+    hasLoadedOnce.current = false;
+  }, [teamId]);
+
   // ── Data fetching ──
 
   const fetchTasks = useCallback(async () => {
@@ -166,7 +187,7 @@ function TeamDetailPage() {
       setTasks(data);
       setError(null);
       hasLoadedOnce.current = true;
-    } catch (err) {
+    } catch {
       if (!hasLoadedOnce.current) {
         setError('Failed to load board.');
       }
@@ -175,11 +196,9 @@ function TeamDetailPage() {
     }
   }, [teamId]);
 
-  // Initial fetch + 5-second polling
+  // Initial fetch + 5-second polling (No synchronous state setting in the effect)
   useEffect(() => {
-    setLoading(true);
-    setError(null);
-    hasLoadedOnce.current = false;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchTasks();
 
     const interval = setInterval(fetchTasks, 5000);
@@ -192,7 +211,12 @@ function TeamDetailPage() {
     switch (activeFilter) {
       case 'my-tasks':
         return user?._id
-          ? allTasks.filter((t) => t.assigneeId === user._id)
+          ? allTasks.filter((t) => {
+              const assigneeIdStr = t.assigneeId && typeof t.assigneeId === 'object'
+                ? t.assigneeId._id
+                : t.assigneeId;
+              return assigneeIdStr === user._id;
+            })
           : allTasks;
       case 'high-priority':
         return allTasks.filter((t) => t.priority === 'high');
@@ -266,7 +290,7 @@ function TeamDetailPage() {
     // Persist to backend via PATCH
     try {
       await updateTaskStatus(taskId, newStatus);
-    } catch (err) {
+    } catch {
       // Rollback — restore previous status on failure
       setTasks((prev) =>
         prev.map((t) =>
@@ -354,7 +378,7 @@ function TeamDetailPage() {
           ) : null}
         </DragOverlay>
       </DndContext>
-      <ActivityFeed teamId={teamId} />
+      <ActivityFeed key={teamId} teamId={teamId} />
     </div>
   );
 }

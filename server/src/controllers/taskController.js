@@ -1,4 +1,5 @@
 import Task from '../models/Task.js';
+import User from '../models/User.js';
 import { logAudit } from '../utils/auditLogger.js';
 
 export const createTask = async (req, res) => {
@@ -45,7 +46,7 @@ export const getTasks = async (req, res) => {
     if (assigneeId) filter.assigneeId = assigneeId;
     if (teamId) filter.teamId = teamId;
 
-    const tasks = await Task.find(filter);
+    const tasks = await Task.find(filter).populate('assigneeId', 'name email role');
     return res.status(200).json(tasks);
   } catch (error) {
     return res.status(500).json({ message: 'Error fetching tasks', error: error.message });

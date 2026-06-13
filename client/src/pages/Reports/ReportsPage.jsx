@@ -21,7 +21,7 @@ export default function ReportsPage() {
         const data = await getMetrics();
         setMetrics(data);
         setError(null);
-      } catch (err) {
+      } catch {
         setError('Failed to load report metrics.');
       } finally {
         setLoading(false);
@@ -42,7 +42,7 @@ export default function ReportsPage() {
       link.click();
       link.parentNode.removeChild(link);
       window.URL.revokeObjectURL(url);
-    } catch (err) {
+    } catch {
       alert('Failed to export report metrics.');
     } finally {
       setExporting(false);

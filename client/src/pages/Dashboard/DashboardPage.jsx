@@ -19,7 +19,7 @@ function DashboardPage() {
         ]);
         setTeams(teamsData);
         setTasks(tasksData);
-      } catch (err) {
+      } catch {
         setError('Failed to load dashboard data.');
       } finally {
         setLoading(false);
@@ -46,7 +46,7 @@ function DashboardPage() {
   }
 
   // Sort tasks by createdAt descending and get the latest 5
-  const recentTasks = tasks
+  const recentTasks = [...tasks]
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 5);
 
