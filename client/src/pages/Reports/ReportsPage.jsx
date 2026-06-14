@@ -7,6 +7,7 @@ import {
   XAxis,
   YAxis,
   Tooltip,
+  Legend,
 } from 'recharts';
 
 export default function ReportsPage() {
@@ -194,6 +195,76 @@ export default function ReportsPage() {
               <span className="reports-card-label">Overdue Percentage</span>
             </div>
           </div>
+        </div>
+
+        {/* Section 4: Average Resolution Time */}
+        <div className="reports-section">
+          <h2 className="reports-section-title">Average Resolution Time</h2>
+          <div className="reports-card" style={{ padding: 'var(--space-6)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '126px' }}>
+            <span className="reports-card-value" style={{ fontSize: '2.5rem', fontWeight: 700, color: 'var(--color-text-primary)', lineHeight: 1.1 }}>
+              {metrics.averageResolutionTime}h
+            </span>
+            <span className="reports-card-label" style={{ marginTop: 'var(--space-2)' }}>
+              Average Hours to Close a Task
+            </span>
+          </div>
+        </div>
+
+        {/* Section 5: Team Productivity */}
+        <div className="reports-section" style={{ gridColumn: 'span 2' }}>
+          <h2 className="reports-section-title">Team Productivity</h2>
+          {metrics.teamProductivity.length === 0 ? (
+            <div className="reports-card">
+              <span className="reports-card-label" style={{ textTransform: 'none' }}>
+                No team productivity data available.
+              </span>
+            </div>
+          ) : (
+            <div className="reports-card" style={{ padding: '20px 16px 10px 16px' }}>
+              <div style={{ width: '100%', height: 260, minWidth: 0 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart 
+                    data={metrics.teamProductivity} 
+                    margin={{ top: 10, right: 5, left: -25, bottom: 0 }}
+                  >
+                    <XAxis 
+                      dataKey="name" 
+                      stroke="var(--color-text-muted)" 
+                      fontSize={11} 
+                      tickLine={false}
+                      axisLine={{ stroke: 'var(--color-border)' }}
+                    />
+                    <YAxis 
+                      stroke="var(--color-text-muted)" 
+                      fontSize={11} 
+                      tickLine={false}
+                      axisLine={{ stroke: 'var(--color-border)' }}
+                      allowDecimals={false}
+                    />
+                    <Tooltip 
+                      cursor={{ fill: 'var(--color-border-subtle)', opacity: 0.5 }}
+                      contentStyle={{ 
+                        backgroundColor: 'var(--color-surface)', 
+                        border: '1px solid var(--color-border)', 
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: '12px',
+                        color: 'var(--color-text-primary)'
+                      }} 
+                    />
+                    <Legend 
+                      verticalAlign="top" 
+                      height={36} 
+                      iconType="circle"
+                      iconSize={8}
+                      wrapperStyle={{ fontSize: '11px' }}
+                    />
+                    <Bar name="Completed Tasks" dataKey="completed" stackId="a" fill="#16a34a" radius={[0, 0, 0, 0]} barSize={25} />
+                    <Bar name="Active Tasks" dataKey="active" stackId="a" fill="#2563eb" radius={[4, 4, 0, 0]} barSize={25} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

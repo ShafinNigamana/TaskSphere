@@ -12,6 +12,7 @@ import userRoutes from './routes/userRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
 
 import path from 'path';
+import { generalLimiter, authLimiter } from './middleware/rateLimiter.js';
 
 const app = express();
 
@@ -22,6 +23,11 @@ app.use(helmet({
 app.use(morgan('dev'));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(process.cwd(), 'uploads')));
+
+// Rate limiting
+app.use('/api', generalLimiter);
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 
 app.use('/api/health', healthRoutes);
 app.use('/api/auth', authRoutes);

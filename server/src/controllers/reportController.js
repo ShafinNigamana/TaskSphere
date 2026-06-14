@@ -53,42 +53,30 @@ export const getReportMetrics = async (req, res) => {
 
     const rate = totalActive > 0 ? Number((overdue / totalActive).toFixed(4)) : 0;
 
-    // 4. Metric 4: Average Resolution Time (MongoDB)
-    const closedTasks = await Task.find({ status: 'done' }).select('createdAt updatedAt');
+    // 4. Metric 4: Average Resolution Time (using MongoDB Task done dates)
+    const doneTasks = await Task.find({ status: 'done' });
     let averageResolutionTime = 0; // in hours
-    if (closedTasks.length > 0) {
-      const totalDurationMs = closedTasks.reduce((sum, task) => {
+    if (doneTasks.length > 0) {
+      const totalDurationMs = doneTasks.reduce((sum, task) => {
         const duration = new Date(task.updatedAt) - new Date(task.createdAt);
-        return sum + Math.max(0, duration);
+        return sum + (duration > 0 ? duration : 0);
       }, 0);
-      averageResolutionTime = Number(((totalDurationMs / (1000 * 60 * 60)) / closedTasks.length).toFixed(2));
+      averageResolutionTime = Number(((totalDurationMs / doneTasks.length) / (1000 * 60 * 60)).toFixed(2));
     }
 
-    // 5. Metric 5: Team Productivity breakdown (MongoDB)
-    const allTasks = await Task.find({}).select('teamId status');
-    const teamStatsMap = {};
-
-    allTasks.forEach((task) => {
-      if (!task.teamId) return;
-      const teamIdStr = task.teamId.toString();
-      if (!teamStatsMap[teamIdStr]) {
-        teamStatsMap[teamIdStr] = { total: 0, completed: 0 };
-      }
-      teamStatsMap[teamIdStr].total += 1;
-      if (task.status === 'done') {
-        teamStatsMap[teamIdStr].completed += 1;
-      }
-    });
-
-    const teams = await Team.find({ _id: { $in: Object.keys(teamStatsMap) } }).select('_id name');
-    const teamProductivity = teams.map((t) => {
-      const stats = teamStatsMap[t._id.toString()] || { total: 0, completed: 0 };
+    // 5. Metric 5: Team Productivity
+    const teams = await Team.find().select('_id name');
+    const tasks = await Task.find().select('teamId status');
+    const teamProductivity = teams.map((team) => {
+      const teamTasks = tasks.filter((t) => t.teamId && t.teamId.toString() === team._id.toString());
+      const completed = teamTasks.filter((t) => t.status === 'done').length;
+      const active = teamTasks.filter((t) => t.status !== 'done').length;
       return {
-        teamId: t._id,
-        name: t.name,
-        totalTasks: stats.total,
-        completedTasks: stats.completed,
-        completionRate: stats.total > 0 ? Number((stats.completed / stats.total).toFixed(4)) : 0,
+        teamId: team._id,
+        name: team.name,
+        completed,
+        active,
+        total: teamTasks.length,
       };
     });
 
@@ -151,40 +139,29 @@ export const exportReportMetrics = async (req, res) => {
     const rate = totalActive > 0 ? Number((overdue / totalActive).toFixed(4)) : 0;
 
     // 4. Average Resolution Time
-    const closedTasks = await Task.find({ status: 'done' }).select('createdAt updatedAt');
+    const doneTasks = await Task.find({ status: 'done' });
     let averageResolutionTime = 0; // in hours
-    if (closedTasks.length > 0) {
-      const totalDurationMs = closedTasks.reduce((sum, task) => {
+    if (doneTasks.length > 0) {
+      const totalDurationMs = doneTasks.reduce((sum, task) => {
         const duration = new Date(task.updatedAt) - new Date(task.createdAt);
-        return sum + Math.max(0, duration);
+        return sum + (duration > 0 ? duration : 0);
       }, 0);
-      averageResolutionTime = Number(((totalDurationMs / (1000 * 60 * 60)) / closedTasks.length).toFixed(2));
+      averageResolutionTime = Number(((totalDurationMs / doneTasks.length) / (1000 * 60 * 60)).toFixed(2));
     }
 
-    // 5. Team Productivity breakdown
-    const allTasks = await Task.find({}).select('teamId status');
-    const teamStatsMap = {};
-
-    allTasks.forEach((task) => {
-      if (!task.teamId) return;
-      const teamIdStr = task.teamId.toString();
-      if (!teamStatsMap[teamIdStr]) {
-        teamStatsMap[teamIdStr] = { total: 0, completed: 0 };
-      }
-      teamStatsMap[teamIdStr].total += 1;
-      if (task.status === 'done') {
-        teamStatsMap[teamIdStr].completed += 1;
-      }
-    });
-
-    const teams = await Team.find({ _id: { $in: Object.keys(teamStatsMap) } }).select('_id name');
-    const teamProductivity = teams.map((t) => {
-      const stats = teamStatsMap[t._id.toString()] || { total: 0, completed: 0 };
+    // 5. Team Productivity
+    const teams = await Team.find().select('_id name');
+    const tasks = await Task.find().select('teamId status');
+    const teamProductivity = teams.map((team) => {
+      const teamTasks = tasks.filter((t) => t.teamId && t.teamId.toString() === team._id.toString());
+      const completed = teamTasks.filter((t) => t.status === 'done').length;
+      const active = teamTasks.filter((t) => t.status !== 'done').length;
       return {
-        name: t.name,
-        totalTasks: stats.total,
-        completedTasks: stats.completed,
-        completionRate: stats.total > 0 ? Number((stats.completed / stats.total).toFixed(4)) : 0,
+        teamId: team._id,
+        name: team.name,
+        completed,
+        active,
+        total: teamTasks.length,
       };
     });
 
@@ -211,17 +188,18 @@ export const exportReportMetrics = async (req, res) => {
     csvContent += `Overdue Rate,Total Active Tasks,${totalActive}\n`;
     csvContent += `Overdue Rate,Overdue Tasks,${overdue}\n`;
     csvContent += `Overdue Rate,Overdue Percentage,${(rate * 100).toFixed(1)}%\n`;
-    csvContent += ',, \n';
+    csvContent += ',, \n'; // separator row
 
-    // Add Resolution Time Section
-    csvContent += 'Resolution Time,, \n';
-    csvContent += `Resolution Time,Average Resolution Time,${averageResolutionTime} hours\n`;
-    csvContent += ',, \n';
+    // Add Average Resolution Time Section
+    csvContent += 'Average Resolution Time,, \n';
+    csvContent += `Average Resolution Time,Average Resolution Time (Hours),${averageResolutionTime} hours\n`;
+    csvContent += ',, \n'; // separator row
 
     // Add Team Productivity Section
     csvContent += 'Team Productivity,, \n';
-    teamProductivity.forEach(team => {
-      csvContent += `Team Productivity,${team.name},${team.completedTasks} of ${team.totalTasks} completed (${(team.completionRate * 100).toFixed(1)}%)\n`;
+    teamProductivity.forEach(tp => {
+      csvContent += `Team Productivity,${tp.name} - Completed Tasks,${tp.completed}\n`;
+      csvContent += `Team Productivity,${tp.name} - Active Tasks,${tp.active}\n`;
     });
 
     // Send CSV as a stream/attachment
