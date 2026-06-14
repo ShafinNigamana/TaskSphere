@@ -21,6 +21,7 @@ import { searchUsers } from '../../services/userService';
 import { useAuth } from '../../context/AuthContext';
 import ActivityFeed from '../../components/ActivityFeed';
 import TaskDetailModal from '../../components/TaskDetailModal';
+import authService from '../../services/authService';
 
 // Column definitions — maps to Task model status enum
 const COLUMNS = [
@@ -169,6 +170,12 @@ function TeamDetailPage() {
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [memberModalError, setMemberModalError] = useState(null);
 
+  const [resetPasswordUser, setResetPasswordUser] = useState(null);
+  const [newPasswordVal, setNewPasswordVal] = useState('');
+  const [passwordResetSuccess, setPasswordResetSuccess] = useState(null);
+  const [passwordResetError, setPasswordResetError] = useState(null);
+  const [resettingPassword, setResettingPassword] = useState(false);
+
   const [team, setTeam] = useState(null);
 
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
@@ -278,7 +285,30 @@ function TeamDetailPage() {
     setMemberSearchQuery('');
     setMemberSearchResults([]);
     setMemberModalError(null);
+    setResetPasswordUser(null);
+    setNewPasswordVal('');
+    setPasswordResetSuccess(null);
+    setPasswordResetError(null);
     setShowMemberModal(true);
+  };
+
+  const handleResetPasswordSubmit = async () => {
+    if (!newPasswordVal || !newPasswordVal.trim()) {
+      setPasswordResetError('Password is required');
+      return;
+    }
+    try {
+      setResettingPassword(true);
+      setPasswordResetError(null);
+      setPasswordResetSuccess(null);
+      await authService.resetPassword(resetPasswordUser._id, newPasswordVal);
+      setPasswordResetSuccess(`Password updated successfully for ${resetPasswordUser.name}.`);
+      setNewPasswordVal('');
+    } catch (err) {
+      setPasswordResetError(err.response?.data?.message || 'Failed to reset password.');
+    } finally {
+      setResettingPassword(false);
+    }
   };
 
   const handleAddMember = (m) => {
@@ -626,6 +656,22 @@ function TeamDetailPage() {
                     {selectedMembers.map((m) => (
                       <div key={m._id} className="member-pill">
                         <span>{m.name}</span>
+                        <button
+                          type="button"
+                          className="member-pill-reset-pwd"
+                          title="Reset Password"
+                          onClick={() => {
+                            setResetPasswordUser(m);
+                            setNewPasswordVal('');
+                            setPasswordResetSuccess(null);
+                            setPasswordResetError(null);
+                          }}
+                        >
+                          <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2.5" fill="none">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                          </svg>
+                        </button>
                         <button 
                           type="button" 
                           className="member-pill-remove" 
@@ -638,6 +684,56 @@ function TeamDetailPage() {
                   </div>
                 )}
               </div>
+
+              {resetPasswordUser && (
+                <div className="inline-reset-password-section" style={{ border: '1px solid var(--color-border)', borderRadius: 'var(--radius-md)', padding: 'var(--space-4)', backgroundColor: 'var(--color-bg)', marginTop: 'var(--space-2)' }}>
+                  <h3 style={{ fontSize: 'var(--text-secondary)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>
+                    Reset Password for {resetPasswordUser.name}
+                  </h3>
+                  <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+                    <input
+                      type="password"
+                      placeholder="Enter new password"
+                      className="form-input"
+                      style={{ flex: 1, padding: '6px 12px', fontSize: 'var(--text-secondary)' }}
+                      value={newPasswordVal}
+                      onChange={(e) => setNewPasswordVal(e.target.value)}
+                    />
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      style={{ padding: '7px 12px', fontSize: 'var(--text-secondary)' }}
+                      disabled={resettingPassword}
+                      onClick={handleResetPasswordSubmit}
+                    >
+                      {resettingPassword ? 'Updating...' : 'Update'}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-secondary"
+                      style={{ padding: '7px 12px', fontSize: 'var(--text-secondary)' }}
+                      onClick={() => {
+                        setResetPasswordUser(null);
+                        setNewPasswordVal('');
+                        setPasswordResetSuccess(null);
+                        setPasswordResetError(null);
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                  {passwordResetSuccess && (
+                    <p style={{ color: 'var(--color-status-done)', fontSize: 'var(--text-caption)', marginTop: 'var(--space-2)', marginBottom: 0 }}>
+                      {passwordResetSuccess}
+                    </p>
+                  )}
+                  {passwordResetError && (
+                    <p style={{ color: 'var(--color-status-todo)', fontSize: 'var(--text-caption)', marginTop: 'var(--space-2)', marginBottom: 0 }}>
+                      {passwordResetError}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {memberModalError && <div className="auth-error">{memberModalError}</div>}
 

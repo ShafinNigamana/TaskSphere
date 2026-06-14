@@ -1,13 +1,14 @@
 import { createMySQLPool } from '../config/mysql.js';
 import User from '../models/User.js';
 import Task from '../models/Task.js';
+import Team from '../models/Team.js';
 import mongoose from 'mongoose';
 
 export const getReportMetrics = async (req, res) => {
   try {
     const pool = createMySQLPool();
 
-    // 1. Metric 1: Tasks Closed Per Week
+    // 1. Metric 1: Tasks Closed Per Week (MySQL)
     const [closedRows] = await pool.query(`
       SELECT 
         YEARWEEK(created_at, 1) AS week,
@@ -19,7 +20,7 @@ export const getReportMetrics = async (req, res) => {
       ORDER BY week DESC
     `);
 
-    // 2. Metric 2: Top 5 Contributors
+    // 2. Metric 2: Top 5 Contributors (MySQL)
     const [contributorRows] = await pool.query(`
       SELECT actor_id, COUNT(*) AS actions
       FROM audit_log
@@ -52,6 +53,45 @@ export const getReportMetrics = async (req, res) => {
 
     const rate = totalActive > 0 ? Number((overdue / totalActive).toFixed(4)) : 0;
 
+    // 4. Metric 4: Average Resolution Time (MongoDB)
+    const closedTasks = await Task.find({ status: 'done' }).select('createdAt updatedAt');
+    let averageResolutionTime = 0; // in hours
+    if (closedTasks.length > 0) {
+      const totalDurationMs = closedTasks.reduce((sum, task) => {
+        const duration = new Date(task.updatedAt) - new Date(task.createdAt);
+        return sum + Math.max(0, duration);
+      }, 0);
+      averageResolutionTime = Number(((totalDurationMs / (1000 * 60 * 60)) / closedTasks.length).toFixed(2));
+    }
+
+    // 5. Metric 5: Team Productivity breakdown (MongoDB)
+    const allTasks = await Task.find({}).select('teamId status');
+    const teamStatsMap = {};
+
+    allTasks.forEach((task) => {
+      if (!task.teamId) return;
+      const teamIdStr = task.teamId.toString();
+      if (!teamStatsMap[teamIdStr]) {
+        teamStatsMap[teamIdStr] = { total: 0, completed: 0 };
+      }
+      teamStatsMap[teamIdStr].total += 1;
+      if (task.status === 'done') {
+        teamStatsMap[teamIdStr].completed += 1;
+      }
+    });
+
+    const teams = await Team.find({ _id: { $in: Object.keys(teamStatsMap) } }).select('_id name');
+    const teamProductivity = teams.map((t) => {
+      const stats = teamStatsMap[t._id.toString()] || { total: 0, completed: 0 };
+      return {
+        teamId: t._id,
+        name: t.name,
+        totalTasks: stats.total,
+        completedTasks: stats.completed,
+        completionRate: stats.total > 0 ? Number((stats.completed / stats.total).toFixed(4)) : 0,
+      };
+    });
+
     return res.status(200).json({
       tasksClosedPerWeek: closedRows,
       topContributors,
@@ -60,6 +100,8 @@ export const getReportMetrics = async (req, res) => {
         overdue,
         rate,
       },
+      averageResolutionTime,
+      teamProductivity,
     });
   } catch (error) {
     console.error('Error fetching report metrics:', error);
@@ -108,6 +150,44 @@ export const exportReportMetrics = async (req, res) => {
     });
     const rate = totalActive > 0 ? Number((overdue / totalActive).toFixed(4)) : 0;
 
+    // 4. Average Resolution Time
+    const closedTasks = await Task.find({ status: 'done' }).select('createdAt updatedAt');
+    let averageResolutionTime = 0; // in hours
+    if (closedTasks.length > 0) {
+      const totalDurationMs = closedTasks.reduce((sum, task) => {
+        const duration = new Date(task.updatedAt) - new Date(task.createdAt);
+        return sum + Math.max(0, duration);
+      }, 0);
+      averageResolutionTime = Number(((totalDurationMs / (1000 * 60 * 60)) / closedTasks.length).toFixed(2));
+    }
+
+    // 5. Team Productivity breakdown
+    const allTasks = await Task.find({}).select('teamId status');
+    const teamStatsMap = {};
+
+    allTasks.forEach((task) => {
+      if (!task.teamId) return;
+      const teamIdStr = task.teamId.toString();
+      if (!teamStatsMap[teamIdStr]) {
+        teamStatsMap[teamIdStr] = { total: 0, completed: 0 };
+      }
+      teamStatsMap[teamIdStr].total += 1;
+      if (task.status === 'done') {
+        teamStatsMap[teamIdStr].completed += 1;
+      }
+    });
+
+    const teams = await Team.find({ _id: { $in: Object.keys(teamStatsMap) } }).select('_id name');
+    const teamProductivity = teams.map((t) => {
+      const stats = teamStatsMap[t._id.toString()] || { total: 0, completed: 0 };
+      return {
+        name: t.name,
+        totalTasks: stats.total,
+        completedTasks: stats.completed,
+        completionRate: stats.total > 0 ? Number((stats.completed / stats.total).toFixed(4)) : 0,
+      };
+    });
+
     // Generate CSV content
     let csvContent = 'Section,Metric,Value\n';
     
@@ -131,6 +211,18 @@ export const exportReportMetrics = async (req, res) => {
     csvContent += `Overdue Rate,Total Active Tasks,${totalActive}\n`;
     csvContent += `Overdue Rate,Overdue Tasks,${overdue}\n`;
     csvContent += `Overdue Rate,Overdue Percentage,${(rate * 100).toFixed(1)}%\n`;
+    csvContent += ',, \n';
+
+    // Add Resolution Time Section
+    csvContent += 'Resolution Time,, \n';
+    csvContent += `Resolution Time,Average Resolution Time,${averageResolutionTime} hours\n`;
+    csvContent += ',, \n';
+
+    // Add Team Productivity Section
+    csvContent += 'Team Productivity,, \n';
+    teamProductivity.forEach(team => {
+      csvContent += `Team Productivity,${team.name},${team.completedTasks} of ${team.totalTasks} completed (${(team.completionRate * 100).toFixed(1)}%)\n`;
+    });
 
     // Send CSV as a stream/attachment
     res.setHeader('Content-Type', 'text/csv');

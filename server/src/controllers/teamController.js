@@ -1,5 +1,6 @@
 import Team from '../models/Team.js';
 import User from '../models/User.js';
+import { logAudit } from '../utils/auditLogger.js';
 
 export const createTeam = async (req, res) => {
   try {
@@ -14,6 +15,9 @@ export const createTeam = async (req, res) => {
       members,
       managerId: req.user?.id 
     });
+
+    logAudit('TEAM_CREATED', req.user?.id, team._id.toString(), team._id.toString(), { name: team.name });
+
     return res.status(201).json(team);
   } catch (error) {
     if (error.name === 'ValidationError') {
@@ -52,15 +56,31 @@ export const updateTeam = async (req, res) => {
     const { id } = req.params;
     const { name, members } = req.body || {};
     
+    const oldTeam = await Team.findById(id);
+    if (!oldTeam) {
+      return res.status(404).json({ message: 'Team not found' });
+    }
+
     const team = await Team.findByIdAndUpdate(
       id,
       { name, members },
       { new: true, runValidators: true }
     );
-    
-    if (!team) {
-      return res.status(404).json({ message: 'Team not found' });
+
+    const oldMembers = oldTeam.members.map(m => m.toString());
+    const newMembers = (members || []).map(m => m.toString());
+
+    const added = newMembers.filter(m => !oldMembers.includes(m));
+    const removed = oldMembers.filter(m => !newMembers.includes(m));
+
+    for (const memberId of added) {
+      logAudit('MEMBER_ASSIGNED', req.user?.id, memberId, team._id.toString(), { teamName: team.name });
     }
+    for (const memberId of removed) {
+      logAudit('MEMBER_REMOVED', req.user?.id, memberId, team._id.toString(), { teamName: team.name });
+    }
+
+    logAudit('TEAM_UPDATED', req.user?.id, team._id.toString(), team._id.toString(), { name: team.name });
     
     return res.status(200).json(team);
   } catch (error) {
@@ -79,6 +99,8 @@ export const deleteTeam = async (req, res) => {
     if (!team) {
       return res.status(404).json({ message: 'Team not found' });
     }
+
+    logAudit('TEAM_DELETED', req.user?.id, id, id, { name: team.name });
     
     return res.status(200).json({ message: 'Team deleted successfully' });
   } catch (error) {

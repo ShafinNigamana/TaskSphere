@@ -33,7 +33,21 @@ export const restrictTo = (...roles) => {
     try {
       const user = await User.findById(req.user.id);
       
-      if (!user || !roles.includes(user.role)) {
+      if (!user) {
+        return res.status(403).json({ message: 'Forbidden: User not found' });
+      }
+
+      const ROLE_HIERARCHY = {
+        super_admin: 4,
+        manager: 3,
+        team_lead: 2,
+        member: 1,
+      };
+
+      const userLevel = ROLE_HIERARCHY[user.role] || 0;
+      const requiredLevel = Math.min(...roles.map(r => ROLE_HIERARCHY[r] || 0));
+
+      if (userLevel < requiredLevel && !roles.includes(user.role)) {
         return res.status(403).json({ message: 'Forbidden: You do not have permission to perform this action' });
       }
       
