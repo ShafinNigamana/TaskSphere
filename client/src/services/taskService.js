@@ -29,3 +29,19 @@ export const deleteTask = async (id) => {
   const response = await api.delete(`/tasks/${id}`);
   return response.data;
 };
+
+export const updateTask = async (id, data) => {
+  const response = await api.patch(`/tasks/${id}`, data);
+  return response.data;
+};
+
+export const uploadAttachment = async (id, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post(`/tasks/${id}/attachments`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};

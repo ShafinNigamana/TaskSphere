@@ -1,6 +1,7 @@
 import Task from '../models/Task.js';
 import User from '../models/User.js';
 import Team from '../models/Team.js';
+import Notification from '../models/Notification.js';
 import { logAudit } from '../utils/auditLogger.js';
 
 export const createTask = async (req, res) => {
@@ -46,6 +47,19 @@ export const createTask = async (req, res) => {
       dueDate,
     });
     
+    // Send assignment notification
+    if (assigneeId && assigneeId.toString() !== req.user.id) {
+      const creatorUser = await User.findById(req.user.id);
+      const creatorName = creatorUser?.name || 'A team member';
+      await Notification.create({
+        recipientId: assigneeId,
+        senderId: req.user.id,
+        type: 'ASSIGN_TASK',
+        message: `${creatorName} assigned you the task "${task.title}"`,
+        taskId: task._id,
+      });
+    }
+
     // Log audit event asynchronously
     logAudit('CREATE_TASK', req.user?.id, task._id.toString(), task.teamId ? task.teamId.toString() : null, {
       title: task.title,
@@ -161,11 +175,27 @@ export const updateTask = async (req, res) => {
       }
     }
     
+    const previousAssigneeId = task.assigneeId?.toString();
+    const newAssigneeId = updates.assigneeId ? updates.assigneeId.toString() : null;
+
     const updatedTask = await Task.findByIdAndUpdate(
       id,
       updates,
       { new: true, runValidators: true }
     );
+
+    // Send assignment notification if assignee changed
+    if (newAssigneeId && newAssigneeId !== previousAssigneeId && newAssigneeId !== req.user.id) {
+      const updaterUser = await User.findById(req.user.id);
+      const updaterName = updaterUser?.name || 'A team member';
+      await Notification.create({
+        recipientId: newAssigneeId,
+        senderId: req.user.id,
+        type: 'ASSIGN_TASK',
+        message: `${updaterName} assigned you the task "${updatedTask.title}"`,
+        taskId: updatedTask._id,
+      });
+    }
     
     // Log audit event asynchronously
     logAudit('UPDATE_TASK', req.user?.id, updatedTask._id.toString(), updatedTask.teamId ? updatedTask.teamId.toString() : null, {
@@ -217,5 +247,52 @@ export const deleteTask = async (req, res) => {
     return res.status(200).json({ message: 'Task deleted successfully' });
   } catch (error) {
     return res.status(500).json({ message: 'Error deleting task', error: error.message });
+  }
+};
+
+export const uploadAttachment = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const file = req.file;
+
+    if (!file) {
+      return res.status(400).json({ message: 'No file uploaded' });
+    }
+
+    const task = await Task.findById(id);
+    if (!task) {
+      return res.status(404).json({ message: 'Task not found' });
+    }
+
+    // Verify team membership
+    const team = await Team.findById(task.teamId);
+    if (!team) {
+      return res.status(404).json({ message: 'Team associated with task not found' });
+    }
+
+    const isAuthorized = team.managerId?.toString() === req.user.id || 
+                         team.members.some(m => m.toString() === req.user.id);
+    if (!isAuthorized) {
+      return res.status(403).json({ message: 'Forbidden: You do not belong to this team' });
+    }
+
+    const attachment = {
+      filename: file.originalname,
+      path: `/uploads/${file.filename}`,
+      uploadedAt: new Date(),
+    };
+
+    task.attachments.push(attachment);
+    await task.save();
+
+    // Log audit event
+    logAudit('UPLOAD_ATTACHMENT', req.user.id, task._id.toString(), task.teamId ? task.teamId.toString() : null, {
+      filename: file.originalname,
+      size: file.size,
+    });
+
+    return res.status(200).json(task);
+  } catch (error) {
+    return res.status(500).json({ message: 'Error uploading attachment', error: error.message });
   }
 };

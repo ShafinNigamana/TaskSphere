@@ -20,6 +20,7 @@ import { getTeams, updateTeam } from '../../services/teamService';
 import { searchUsers } from '../../services/userService';
 import { useAuth } from '../../context/AuthContext';
 import ActivityFeed from '../../components/ActivityFeed';
+import TaskDetailModal from '../../components/TaskDetailModal';
 
 // Column definitions — maps to Task model status enum
 const COLUMNS = [
@@ -70,7 +71,7 @@ function isOverdue(task) {
 
 // ─── TaskCard (rendered inside SortableContext) ────────────
 
-function SortableTaskCard({ task }) {
+function SortableTaskCard({ task, onClick }) {
   const {
     attributes,
     listeners,
@@ -92,6 +93,7 @@ function SortableTaskCard({ task }) {
       className={`kanban-card ${isDragging ? 'kanban-card--dragging' : ''}`}
       {...attributes}
       {...listeners}
+      onClick={onClick}
     >
       <TaskCardContent task={task} />
     </div>
@@ -121,7 +123,7 @@ function TaskCardContent({ task }) {
 
 // ─── KanbanColumn ──────────────────────────────────────────
 
-function KanbanColumn({ column, tasks, isOver }) {
+function KanbanColumn({ column, tasks, isOver, onTaskClick }) {
   const taskIds = tasks.map((t) => t._id);
 
   const { setNodeRef } = useDroppable({
@@ -140,7 +142,7 @@ function KanbanColumn({ column, tasks, isOver }) {
             <div className="kanban-column-empty">No tasks</div>
           ) : (
             tasks.map((task) => (
-              <SortableTaskCard key={task._id} task={task} />
+              <SortableTaskCard key={task._id} task={task} onClick={() => onTaskClick(task)} />
             ))
           )}
         </div>
@@ -170,6 +172,7 @@ function TeamDetailPage() {
   const [team, setTeam] = useState(null);
 
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
   const [taskForm, setTaskForm] = useState({
     title: '',
     description: '',
@@ -546,6 +549,7 @@ function TeamDetailPage() {
               column={column}
               tasks={getTasksForColumn(column.id)}
               isOver={overColumnId === column.id}
+              onTaskClick={setSelectedTask}
             />
           ))}
         </div>
@@ -559,6 +563,16 @@ function TeamDetailPage() {
         </DragOverlay>
       </DndContext>
       <ActivityFeed key={teamId} teamId={teamId} />
+
+      {/* Task Detail Modal */}
+      {selectedTask && (
+        <TaskDetailModal
+          task={selectedTask}
+          team={team}
+          onClose={() => setSelectedTask(null)}
+          onUpdate={fetchTasks}
+        />
+      )}
 
       {/* Manage Members Modal */}
       {showMemberModal && (

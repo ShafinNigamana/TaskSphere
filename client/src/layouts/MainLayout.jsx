@@ -1,5 +1,6 @@
 import { Outlet, useNavigate, NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import NotificationBell from '../components/NotificationBell';
 
 function MainLayout() {
   const { user, logout } = useAuth();
@@ -19,6 +20,7 @@ function MainLayout() {
         <div className="header-content">
           <h1 className="header-title">Team Task Management Platform</h1>
           <div className="header-actions">
+            <NotificationBell />
             <span className="header-user">Welcome, {displayName}</span>
             <button onClick={handleLogout} className="logout-button">
               Logout
