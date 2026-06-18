@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="./docs/screenshots/logo.png" alt="TaskSphere" width="280" />
+# TaskSphere <img src="./docs/screenshots/logo-icon.png" height="38" valign="middle" />
 
 **A Team Collaboration & Task Management Platform**
 
