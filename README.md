@@ -1,197 +1,344 @@
-# Team Task Management Platform (MERN)
+# TaskSphere 🚀
 
-A high-performance team task management platform built using the MERN stack with a dual-database architecture. The system combines flexible document transactions (MongoDB Atlas) for team metadata and task status with structured audit history logs (MySQL) for secure historical querying.
-
----
-
-## Project Overview
-
-This platform is built as a developer-friendly monorepo using `pnpm` workspaces. It provides user authentication, team organization controls, visual Kanban project boards, a chronological team activity feed, and manager metrics dashboard with CSV report export capabilities.
+A sleek, premium full-stack team collaboration and task management dashboard designed to replicate high-end SaaS workflows (inspired by Vercel, Linear, and Notion). TaskSphere features a strict, modern monochrome design system, granular scope-based team privacy controls, visual priority tracking, interactive Kanban boards, and manager analytics dashboards.
 
 ---
 
-## Core Features
-
-### 🔐 Authentication & Access Control
-* **JWT-Based Login / Registration**: Secure sign-up/sign-in flows that return a token and store session details in `localStorage`.
-* **Protected Routes**: Restricts navigation views utilizing route components based on authorization roles.
-* **Role-Based Policies (`manager` vs `member`)**:
-  * **Managers**: Full workspace administration including team CRUD and Reports analytics dashboards.
-  * **Members**: Group collaboration, task status management, and viewing activity logs.
-
-### 📋 Team & Task Boards (Kanban)
-* **3-Column Board**: Task workflow split into `To Do`, `In Progress`, and `Done` states.
-* **Fluid Drag & Drop**: Native board interactions implemented using `@dnd-kit/core` with `PointerSensor` activation constraints.
-* **Optimistic UI Updates**: Task moves reflect instantly on the UI for high responsiveness.
-* **Automatic Rollbacks**: Status patches that fail on the backend trigger automatic UI card reversion to ensure state consistency.
-* **Dynamic Avatars**: Avatars dynamically render task assignee initials (e.g. "Jane Doe" -> "JD") or `'UN'` (Unassigned) based on populated backend references.
-* **Filter Chips**: Instant filtering by "All", "My Tasks", "High Priority", and "Overdue" task badges.
-
-### 📜 Real-Time Activity Feed
-* **Decoupled Audit Logs**: Logs are parsed from MySQL database and filtered by team.
-* **Silent Polling**: 5-second background query keeps the board and feed updated without interrupting user flows.
-* **Chronological Pagination**: Clean feed pages limited to 20 logs each.
-* **Relative Timestamps**: Formatted relative dates (e.g. "Just now", "Yesterday").
-
-### 📊 Manager Reports
-* **Recharts Visualizations**: Interactive weekly closed task stats.
-* **Leaderboard Statistics**: Rank contributors by their log action frequency.
-* **Overdue Rate Tracker**: Displays overdue rates based on due dates.
-* **CSV Export Stream**: Immediate download of complete reports metrics.
+[![React](https://img.shields.io/badge/React-19.2-black?logo=react&logoColor=61DAFB)](https://react.dev)
+[![Vite](https://img.shields.io/badge/Vite-8.0-black?logo=vite&logoColor=646CFF)](https://vite.dev)
+[![NodeJS](https://img.shields.io/badge/Node.js-22.x-black?logo=nodedotjs&logoColor=5FA04E)](https://nodejs.org)
+[![Express](https://img.shields.io/badge/Express-5.2-black?logo=express&logoColor=ffffff)](https://expressjs.com)
+[![MongoDB](https://img.shields.io/badge/MongoDB_Atlas-9.0-black?logo=mongodb&logoColor=47A248)](https://mongodb.com)
+[![MySQL](https://img.shields.io/badge/MySQL-8.x-black?logo=mysql&logoColor=4479A1)](https://mysql.com)
+[![Vercel](https://img.shields.io/badge/Vercel-Client-black?logo=vercel&logoColor=ffffff)](https://vercel.com)
+[![Render](https://img.shields.io/badge/Render-Backend-black?logo=render&logoColor=46E3B7)](https://render.com)
+[![License](https://img.shields.io/badge/License-MIT-black)](./LICENSE)
 
 ---
 
-## Technology Stack
+## 🔗 Live Demo
+
+Access the live deployments of TaskSphere:
+
+* **Frontend Application**: [https://tasksphere-rho.vercel.app](https://tasksphere-rho.vercel.app)
+* **Backend REST API**: [https://task-management-api-rm0v.onrender.com](https://task-management-api-rm0v.onrender.com)
+* **Demo Video Tour**: `<DEMO_VIDEO_URL>`
+
+---
+
+## 📸 Screenshots
+
+### 1. Modern Login Interface
+![Login Page](https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80)
+*Clean, central card auth layout with complete password visibility toggling, error alerts, and manager/member onboarding.*
+
+### 2. Information-Rich Dashboard
+![Dashboard](https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80)
+*Interactive welcome header greeting, 4-card metric grid (Total Teams, Total Tasks, My Tasks, Overdue count), and click-navigable recent tasks list.*
+
+### 3. Collaboration Teams Directory
+![Teams Page](https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=800&q=80)
+*Responsive grid featuring team card summaries (members, created dates, role-scoped details), manager modals, and debounced user searches.*
+
+### 4. Interactive Kanban Board
+![Kanban Board](https://images.unsplash.com/photo-1611224885990-ab7363d1f2a9?auto=format&fit=crop&w=800&q=80)
+*Drag-and-drop workspace using `@dnd-kit` with column status indicators (To Do, In Progress, Done), left priority status border strips, and snap-scrolling on mobile viewports.*
+
+### 5. Task Detail Editor
+![Task Detail Page](https://images.unsplash.com/photo-1484480974693-2ca0a78f38b4?auto=format&fit=crop&w=800&q=80)
+*Overlay drawer supporting inline status/priority updates, assignee updates, and custom-styled deletion warning dialogs.*
+
+### 6. Analytics Reports Dashboard
+![Reports Dashboard](https://images.unsplash.com/photo-1543286386-7a3950385cc4?auto=format&fit=crop&w=800&q=80)
+*Manager-only analytics metrics featuring Recharts weekly task performance, contributor leaderboards, active/overdue ratios, and scoped CSV exports.*
+
+---
+
+## ✨ Features
+
+| Category | Feature | Description |
+| :--- | :--- | :--- |
+| **Authentication** | Secure JWT | Token-based sessions with local storage credentials caching. |
+| | Password Hashing | Secure one-way bcrypt password encryption. |
+| | Rate Limiting | IP limiters guarding auth registers and log-in routes. |
+| **Team Management**| Create / Roster | Managers can create teams and add members via email search. |
+| | Role-Based Access| Granular Manager vs. Member permissions layout. |
+| | Roster Updates | Dynamic member search autocomplete with debouncing. |
+| **Task Management**| Kanban Board | Full drag-and-drop workflow updates with optimistic UI rollback. |
+| | Priority Coding | Task prioritization using color strips (High: Red, Medium: Gray). |
+| | Overdue Badging | Urgent red flags highlighting past-due tasks. |
+| | Details Modal | Escape-closable details overlay with full editing capability. |
+| **Analytics & Logs**| Reports Board | Weekly closed task charts (Recharts) and contributors lists. |
+| | CSV Export | Export scoped team performance data directly to CSV. |
+| | Live Activity Feed| Action audit logs polling every 5s with custom type indicator borders. |
+| **UX & Polish** | Monochrome Aesthetic| Notion/Linear-inspired palette (Black, White, Gray, Inter Font). |
+| | Responsive Layout| Sidebar navigation hiding duplication; top horizontal tabs on mobile. |
+| | Skeleton Loaders | Pulsing gray shimmer states replacing boring "Loading..." text. |
+
+---
+
+## 🛠️ Tech Stack
 
 ### Frontend
-* **Core Library**: React (v19)
-* **Build tool**: Vite
-* **Routing**: React Router DOM (v7)
-* **HTTP Client**: Axios (with token interceptors)
-* **Drag-and-Drop**: `@dnd-kit/core` & `@dnd-kit/sortable`
-* **Charts**: Recharts (for responsive report metrics)
+* **Core Framework**: React (v19.2) with Vite (v8.0)
+* **Routing**: React Router (v7.1)
+* **Data Fetching**: Axios (v1.16)
+* **Drag-and-Drop**: `@dnd-kit` (Core, Sortable, Utilities)
+* **Charts**: Recharts (v3.8)
 
 ### Backend
-* **Runtime**: Node.js
-* **Framework**: Express.js
-* **Security Middleware**: Helmet, CORS, Morgan
-* **ORM / Database Driver**: Mongoose (MongoDB) & `mysql2/promise` (MySQL)
-* **Authorization**: jsonwebtoken & bcrypt
+* **Environment**: Node.js (v22.x) with Express (v5.2)
+* **Security & Headers**: Helmet (v8.1), CORS (v2.8)
+* **Authentication**: JSON Web Tokens (`jsonwebtoken` v9.0), `bcrypt` (v6.0)
+* **Logging**: Morgan (v1.10)
+* **Rate Limiter**: `express-rate-limit` (v8.5)
+
+### Database
+* **Primary / User Store**: MongoDB Atlas (`mongoose` v9.0)
+* **Audit Logs / Analytics**: Cloud MySQL Server (`mysql2` v3.15)
+
+### Tools & Deployment
+* **Client Hosting**: Vercel
+* **API Hosting**: Render
+* **Monorepo Manager**: pnpm Workspaces
 
 ---
 
-## System Architecture
+## 📐 Architecture Overview
 
-```text
-               ┌──────────────────────────────┐
-               │    React SPA Client (Vite)   │
-               └──────────────┬───────────────┘
-                              │ HTTP Requests
-                              ▼
-               ┌──────────────────────────────┐
-               │  Express.js Application API  │
-               └──────────────┬───────────────┘
-                              │
-               ┌──────────────┴───────────────┐
-               ▼                              ▼
-    ┌────────────────────┐          ┌────────────────────┐
-    │MongoDB Operational │          │    MySQL Log DB    │
-    │ (Teams, Users,     │          │  (Audit Log Table) │
-    │  Task Documents)   │          └────────────────────┘
-    └────────────────────┘
+TaskSphere uses a hybrid database design separating operational states (NoSQL) from audit logging history (Relational SQL):
+
+```
+                       ┌─────────────────────────┐
+                       │     React Frontend      │
+                       │     (Vite / Vercel)     │
+                       └────────────┬────────────┘
+                                    │ Axios HTTPS
+                                    ▼
+                       ┌─────────────────────────┐
+                       │     Express Backend     │
+                       │        (Render)         │
+                       └──────┬───────────┬──────┘
+                              │           │
+           Mongoose queries   │           │ mysql2 connection
+                              ▼           ▼
+                   ┌─────────────┐     ┌─────────────┐
+                   │   MongoDB   │     │    MySQL    │
+                   │    Atlas    │     │ Audit Store │
+                   │(Users/Tasks)│     │ (Activity)  │
+                   └─────────────┘     └─────────────┘
 ```
 
-For a detailed review of components, contexts, and sequences, read the [System Architecture Guide](file:///d:/MyProject/task-management-mern/docs/architecture/system-overview.md).
-
 ---
 
-## Project Structure
+## 📁 Folder Structure
+
+TaskSphere is structured as a pnpm monorepo layout:
 
 ```text
 task-management-mern/
-├── client/                     # React Frontend Single Page Application
-│   ├── src/
-│   │   ├── components/         # Reusable layouts, feeds, and guards
-│   │   ├── context/            # AuthContext providers
-│   │   ├── layouts/            # Sidebar + Header MainLayout
-│   │   ├── pages/              # Dashboard, Teams, Kanban, Reports pages
-│   │   ├── services/           # Axios API service integrations
-│   │   └── styles/             # global.css design tokens
-├── server/                     # Node.js Express REST API
-│   ├── src/
-│   │   ├── config/             # DB connection hooks (Mongo & MySQL)
-│   │   ├── controllers/        # Request handlers (auth, tasks, reports)
-│   │   ├── middleware/         # protect/restrictTo JWT guards
-│   │   ├── models/             # Mongoose Schemas (User, Team, Task)
-│   │   ├── routes/             # REST Route mappings
-│   │   └── utils/              # MySQL log audit utilities
-├── docs/                       # Design guides and logs
-└── README.md
+├── client/                     # React Frontend Source Code
+│   ├── public/                 # Static assets, icons, and favicon.svg
+│   └── src/
+│       ├── components/         # Reusable widgets (Skeletons, EmptyState, Logo)
+│       ├── context/            # AuthContext provider
+│       ├── layouts/            # Layout shell templates (MainLayout)
+│       ├── pages/              # Page view components (Dashboard, Teams, Reports)
+│       ├── services/           # Axios backend api connectors
+│       ├── styles/             # Global CSS style systems
+│       └── main.jsx
+├── server/                     # Express Backend Source Code
+│   └── src/
+│       ├── config/             # DB settings (Mongo connection, MySQL pool)
+│       ├── controllers/        # Route controllers
+│       ├── middleware/         # Auth verify, RBAC, and rate limiters
+│       ├── models/             # Mongoose schemas (User, Team, Task)
+│       ├── routes/             # REST endpoints (auth, teams, tasks, reports)
+│       └── app.js
+├── docs/                       # Project documentation
+├── package.json                # Monorepo pnpm workspaces definition
+└── pnpm-workspace.yaml
 ```
 
 ---
 
-## Environment Variables
+## 🚀 Getting Started
 
-### Backend (`server/.env`)
+### Prerequisites
+* [Node.js](https://nodejs.org) (v22.x or later recommended)
+* [pnpm](https://pnpm.io) (v10.x recommended)
+* MongoDB Atlas Database connection URI
+* MySQL Database credentials (with logs schema privileges)
+
+### Installation
+Clone the repository and install dependencies from the root directory:
+```bash
+git clone https://github.com/ShafinNigamana/task-management-mern.git
+cd task-management-mern
+pnpm install
+```
+
+### Environment Variables Setup
+
+Create your environment configuration files:
+
+#### Backend Setup (`server/.env`)
 Create a `.env` file inside the `server/` directory:
 ```env
 PORT=5000
-MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/task_management_db
-MYSQL_HOST=localhost
+JWT_SECRET=your_jwt_signing_secret_key
+MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/tasksphere
+MYSQL_HOST=your_mysql_host_address
 MYSQL_PORT=3306
-MYSQL_USER=root
-MYSQL_PASSWORD=yourpassword
-MYSQL_DATABASE=task_management_audit
-JWT_SECRET=your_jwt_secret_key
+MYSQL_USER=your_mysql_username
+MYSQL_PASSWORD=your_mysql_password
+MYSQL_DATABASE=your_mysql_database_name
 ```
 
-### Frontend (`client/.env`)
+#### Frontend Setup (`client/.env`)
 Create a `.env` file inside the `client/` directory:
 ```env
 VITE_API_BASE_URL=http://localhost:5000/api
 ```
 
----
+### Running Locally
+You can launch both the backend server and client server concurrently from the root directory using pnpm:
 
-## Setup Instructions
+```bash
+# Run both frontend and backend dev servers concurrently
+pnpm run dev:client & pnpm run dev:server
+```
 
-### Prerequisites
-* Node.js (v18+)
-* `pnpm` installed globally (`npm install -g pnpm`)
-* A running MongoDB instance (or Atlas account)
-* A running MySQL database instance
-
-### Installation
-1. Clone the repository and navigate to the project directory:
-   ```bash
-   git clone <repository-url>
-   cd task-management-mern
-   ```
-2. Install workspace dependencies:
-   ```bash
-   pnpm install
-   ```
-
-### Running the Application
-1. **Start Backend Server**:
-   ```bash
-   pnpm run dev:server
-   ```
-2. **Start Frontend Client**:
-   ```bash
-   pnpm run dev:client
-   ```
-3. Open `http://localhost:5173` in your browser.
+* **Frontend Client**: [http://localhost:5173](http://localhost:5173)
+* **Backend API server**: [http://localhost:5000](http://localhost:5000)
 
 ---
 
-## API Overview
+## 🔑 Environment Variables Reference
 
-For detailed request payloads, HTTP methods, response structures, and role restrictions, read the [REST API Reference Guide](file:///d:/MyProject/task-management-mern/docs/api-documentation.md).
+### Frontend Configuration
+| Variable | Description | Default / Example |
+| :--- | :--- | :--- |
+| `VITE_API_BASE_URL` | Base endpoint route prefix for API requests. | `http://localhost:5000/api` |
 
----
-
-## Completed Internship Milestones
-
-### Week 3
-* **Authentication**: Signup, login, JWT token generation, and secure local token storage.
-* **Routing**: Setup client side Router, routing layout viewports, and Protected route wrappers.
-* **Dashboard**: Total count cards, recent task listings.
-* **Teams**: Renders all team cards, roster sizes, and routing details.
-
-### Week 4
-* **Kanban Board**: Drag-and-drop workflow status boards, optimistic updates, and rollback failure state handler.
-* **Activity Feed**: Paginated list details, relative timestamps, and key-based auto-resets on team swaps.
-* **Reports**: Top contributor lists, tasks closed charts, overdue rate tracking calculations.
-* **CSV Export**: Streams compiled metrics directly into standard file format.
-* **Manager Access Control**: Role checks restricted backend controllers and hid frontend navigation menus.
+### Backend Configuration
+| Variable | Description | Default / Example |
+| :--- | :--- | :--- |
+| `PORT` | Listening server port. | `5000` |
+| `JWT_SECRET` | Secret key used to sign JSON Web Tokens. | `super_secret_jwt_sign_key` |
+| `MONGO_URI` | Mongo DB Atlas connection string. | `mongodb+srv://...` |
+| `MYSQL_HOST` | MySQL hostname address. | `127.0.0.1` |
+| `MYSQL_PORT` | MySQL connection port. | `3306` |
+| `MYSQL_USER` | MySQL database connection user name. | `root` |
+| `MYSQL_PASSWORD` | MySQL connection password credential. | `password` |
+| `MYSQL_DATABASE` | MySQL database schema name. | `tasksphere_logs` |
 
 ---
 
-## Current Status
+## 📡 API Overview
 
-**Day 26 Final Submission Audit and Refinement completed.**
-* **Linting status**: 0 errors, 0 warnings.
-* **Production Build status**: 0 compile errors.
-* **Final Verdict**: **READY FOR SUBMISSION**.
+All backend endpoints are prefixed with `/api` and protected by JWT auth (unless stated otherwise):
+
+### Authentication (`/api/auth`)
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/register` | Register a new user profile. | Public |
+| `POST` | `/login` | Log in and receive a session JWT. | Public (Rate Limited) |
+| `GET` | `/me` | Retrieve the authenticated user profile. | User JWT |
+
+### Teams (`/api/teams`)
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/` | Fetch all teams the user is part of. | User JWT |
+| `POST` | `/` | Create a new team roster. | Managers Only |
+| `PUT` | `/:id` | Update team roster and members. | Managers Only |
+| `DELETE` | `/:id` | Delete an existing team. | Managers Only |
+
+### Tasks (`/api/tasks`)
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/` | List all tasks within user's teams. | User JWT |
+| `POST` | `/` | Add a new task card. | Team Members |
+| `GET` | `/:id` | Fetch task details. | Team Members |
+| `PUT` | `/:id` | Update task title, status, or assignee. | Team Members |
+| `DELETE` | `/:id` | Delete a task card. | Managers Only |
+
+### Analytics & Logging (`/api/reports` & `/api/audit`)
+| Method | Endpoint | Description | Access |
+| :--- | :--- | :--- | :--- |
+| `GET` | `/reports/metrics`| Retrieve overview metrics & charts. | Managers Only |
+| `GET` | `/reports/export` | Download metrics as structured CSV. | Managers Only |
+| `GET` | `/audit` | Fetch paginated team activity logs. | Team Members |
+
+---
+
+## 👥 User Roles & Permissions
+
+TaskSphere implements role-based access control (RBAC):
+
+### Manager
+* Create new teams and manage their member rosters.
+* Create tasks, edit details, and modify statuses.
+* Delete any task card in the workspace.
+* Access the **Reports Dashboard** containing team statistics.
+* Export team performance reports to CSV files.
+
+### Member
+* View teams they have been added to by managers.
+* Create, edit, and move task cards on their assigned Kanban boards.
+* View team activity logs in the **Recent Activity Feed**.
+* **Blocked** from accessing the Reports Dashboard, CSV Export, or deleting task cards.
+
+---
+
+## 🌐 Deployment
+
+### Frontend (Vercel)
+Deploy the frontend client folder to Vercel:
+1. Link your GitHub repository.
+2. Set directory root to `client`.
+3. Set Build Command: `node ../patch-es-toolkit.js && vite build`
+4. Set Output Directory: `dist`
+5. Configure Environment Variables: `VITE_API_BASE_URL`.
+
+### Backend (Render)
+Deploy the server folder to Render:
+1. Link your GitHub repository.
+2. Select Web Service.
+3. Set Root Directory to `server`.
+4. Set Build Command: `pnpm install`
+5. Set Start Command: `node src/server.js`
+6. Add environment variables: `PORT`, `JWT_SECRET`, `MONGO_URI`, `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_DATABASE`.
+
+---
+
+## 🗺️ Roadmap
+
+### Version 1.1 (Completed)
+* ✓ Sleek, minimal monochrome CSS branding system (Linear style).
+* ✓ Pulsing shimmer skeletons and structured SVG empty states.
+* ✓ granules scope-based team ownership visibility.
+* ✓ Drag rotation enhancements on Kanban cards.
+* ✓ Integrated MySQL logging tracking user contributions.
+
+### Version 1.2 (Planned)
+* Task sorting & filtering refinements.
+* Expandable subtasks checklist.
+* Date-picker calendar layouts.
+
+### Version 2.0 (Future)
+* Realtime collaborative cursor indicators.
+* Slack/Email task deadline triggers.
+* Desktop offline synchronization support.
+
+---
+
+## ✍️ Author
+**Shafin Nigamana**
+* **GitHub**: [@ShafinNigamana](https://github.com/ShafinNigamana)
+* **LinkedIn**: [https://linkedin.com/in/shafinnigamana](https://linkedin.com/in/shafinnigamana)
+
+---
+
+## 📄 License
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
