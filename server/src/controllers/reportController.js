@@ -30,9 +30,12 @@ export const getReportMetrics = async (req, res) => {
         YEARWEEK(created_at, 1) AS week,
         COUNT(*) AS closed_count
       FROM audit_log
-      WHERE action = 'UPDATE_TASK'
-        AND team_id IN (?)
-        AND JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.updatedFields.status')) = 'done'
+      WHERE team_id IN (?)
+        AND (
+          (action = 'UPDATE_TASK' AND JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.updatedFields.status')) = 'done')
+          OR
+          (action = 'CREATE_TASK' AND JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.status')) = 'done')
+        )
       GROUP BY YEARWEEK(created_at, 1)
       ORDER BY week DESC
     `, [teamIds]);
@@ -117,9 +120,12 @@ export const exportReportMetrics = async (req, res) => {
         YEARWEEK(created_at, 1) AS week,
         COUNT(*) AS closed_count
       FROM audit_log
-      WHERE action = 'UPDATE_TASK'
-        AND team_id IN (?)
-        AND JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.updatedFields.status')) = 'done'
+      WHERE team_id IN (?)
+        AND (
+          (action = 'UPDATE_TASK' AND JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.updatedFields.status')) = 'done')
+          OR
+          (action = 'CREATE_TASK' AND JSON_UNQUOTE(JSON_EXTRACT(payload_json, '$.status')) = 'done')
+        )
       GROUP BY YEARWEEK(created_at, 1)
       ORDER BY week DESC
     `, [teamIds]);
