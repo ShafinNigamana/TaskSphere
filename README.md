@@ -1,8 +1,12 @@
+<div align="center">
+
 # TaskSphere 🚀
 
-A sleek, premium full-stack team collaboration and task management dashboard designed to replicate high-end SaaS workflows (inspired by Vercel, Linear, and Notion). TaskSphere features a strict, modern monochrome design system, granular scope-based team privacy controls, visual priority tracking, interactive Kanban boards, and manager analytics dashboards.
+**A Team Collaboration & Task Management Platform**
 
----
+*A sleek, premium full-stack team collaboration and task management dashboard designed to replicate high-end SaaS workflows (inspired by Vercel, Linear, and Notion).*
+
+***
 
 [![React](https://img.shields.io/badge/React-19.2-black?logo=react&logoColor=61DAFB)](https://react.dev)
 [![Vite](https://img.shields.io/badge/Vite-8.0-black?logo=vite&logoColor=646CFF)](https://vite.dev)
@@ -14,15 +18,14 @@ A sleek, premium full-stack team collaboration and task management dashboard des
 [![Render](https://img.shields.io/badge/Render-Backend-black?logo=render&logoColor=46E3B7)](https://render.com)
 [![License](https://img.shields.io/badge/License-MIT-black)](./LICENSE)
 
----
+***
 
-## 🔗 Live Demo
+### 🔗 Live Demo
 
-Access the live deployments of TaskSphere:
+**Frontend Application**: [tasksphere-rho.vercel.app](https://tasksphere-rho.vercel.app)  
+**Backend REST API**: [task-management-api-rm0v.onrender.com](https://task-management-api-rm0v.onrender.com)
 
-* **Frontend Application**: [https://tasksphere-rho.vercel.app](https://tasksphere-rho.vercel.app)
-* **Backend REST API**: [https://task-management-api-rm0v.onrender.com](https://task-management-api-rm0v.onrender.com)
-* **Demo Video Tour**: `<DEMO_VIDEO_URL>`
+</div>
 
 ---
 
@@ -79,28 +82,21 @@ Access the live deployments of TaskSphere:
 
 ## 🛠️ Tech Stack
 
+<div align="center">
+
 ### Frontend
-* **Core Framework**: React (v19.2) with Vite (v8.0)
-* **Routing**: React Router (v7.1)
-* **Data Fetching**: Axios (v1.16)
-* **Drag-and-Drop**: `@dnd-kit` (Core, Sortable, Utilities)
-* **Charts**: Recharts (v3.8)
+**React (v19.2)** • **Vite (v8.0)** • **React Router (v7.1)** • **Axios (v1.16)** • **@dnd-kit** • **Recharts (v3.8)**
 
 ### Backend
-* **Environment**: Node.js (v22.x) with Express (v5.2)
-* **Security & Headers**: Helmet (v8.1), CORS (v2.8)
-* **Authentication**: JSON Web Tokens (`jsonwebtoken` v9.0), `bcrypt` (v6.0)
-* **Logging**: Morgan (v1.10)
-* **Rate Limiter**: `express-rate-limit` (v8.5)
+**Node.js (v22.x)** • **Express (v5.2)** • **JWT & bcrypt** • **Helmet** • **CORS** • **express-rate-limit** • **Morgan**
 
 ### Database
-* **Primary / User Store**: MongoDB Atlas (`mongoose` v9.0)
-* **Audit Logs / Analytics**: Cloud MySQL Server (`mysql2` v3.15)
+**MongoDB Atlas** (Primary Operational Store) • **Clever Cloud MySQL** (Audit Logs & Analytics)
 
 ### Tools & Deployment
-* **Client Hosting**: Vercel
-* **API Hosting**: Render
-* **Monorepo Manager**: pnpm Workspaces
+**Vercel** (Client Hosting) • **Render** (API Hosting) • **pnpm Workspaces** (Monorepo)
+
+</div>
 
 ---
 
