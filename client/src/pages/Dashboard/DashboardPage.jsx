@@ -1,12 +1,17 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { getTeams } from '../../services/teamService';
 import { getTasks } from '../../services/taskService';
+import { useAuth } from '../../context/AuthContext';
+import { DashboardSkeleton } from '../../components/Skeleton';
+import EmptyState from '../../components/EmptyState';
 
 function DashboardPage() {
   const [teams, setTeams] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -30,11 +35,7 @@ function DashboardPage() {
   }, []);
 
   if (loading) {
-    return (
-      <div className="dashboard-container">
-        <p className="loading-text">Loading dashboard...</p>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (error) {
@@ -52,11 +53,11 @@ function DashboardPage() {
 
   const getStatusColor = (status) => {
     const colors = {
-      'todo': '#b91c1c',
-      'in-progress': '#a16207',
-      'done': '#15803d',
+      'todo': 'var(--color-status-todo)',
+      'in-progress': 'var(--color-status-inprogress)',
+      'done': 'var(--color-status-done)',
     };
-    return colors[status] || '#737373';
+    return colors[status] || 'var(--color-text-muted)';
   };
 
   const formatDate = (dateString) => {
@@ -64,12 +65,23 @@ function DashboardPage() {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   };
 
+  // Calculations for additional summary cards
+  const myTasksCount = tasks.filter(
+    (t) => t.assigneeId === user?._id || t.assigneeId?._id === user?._id
+  ).length;
+
+  const overdueCount = tasks.filter(
+    (t) => t.dueDate && new Date(t.dueDate) < new Date() && t.status !== 'done'
+  ).length;
+
+  const greetingName = user?.name || 'User';
+
   return (
     <div className="dashboard-container">
       {/* Header */}
       <div className="dashboard-header">
         <h1 className="dashboard-title">Dashboard</h1>
-        <p className="dashboard-subtitle">System overview and metrics</p>
+        <p className="dashboard-subtitle">Welcome back, {greetingName}</p>
       </div>
 
       {/* Summary Section */}
@@ -86,19 +98,37 @@ function DashboardPage() {
             <p className="summary-value">{tasks.length}</p>
           </div>
         </div>
+        <div className="summary-card">
+          <div className="summary-content">
+            <p className="summary-label">My Tasks</p>
+            <p className="summary-value">{myTasksCount}</p>
+          </div>
+        </div>
+        <div className="summary-card">
+          <div className="summary-content">
+            <p className="summary-label">Overdue Tasks</p>
+            <p className="summary-value">{overdueCount}</p>
+          </div>
+        </div>
       </div>
 
       {/* Recent Tasks Section */}
       <div className="dashboard-section">
         <h2 className="section-title">Recent Tasks</h2>
         {recentTasks.length === 0 ? (
-          <div className="empty-card">
-            <p>No recent tasks available.</p>
-          </div>
+          <EmptyState 
+            type="dashboard" 
+            title="No tasks yet" 
+            description="Tasks from your teams will appear here." 
+          />
         ) : (
           <div className="tasks-list">
             {recentTasks.map((task) => (
-              <div key={task._id} className="task-item">
+              <Link 
+                key={task._id} 
+                to={`/teams/${task.teamId}`} 
+                className="task-item"
+              >
                 <div className="task-main">
                   <p className="task-title">{task.title}</p>
                   <div className="task-meta">
@@ -112,7 +142,7 @@ function DashboardPage() {
                   </div>
                 </div>
                 <p className="task-date">{formatDate(task.createdAt)}</p>
-              </div>
+              </Link>
             ))}
           </div>
         )}

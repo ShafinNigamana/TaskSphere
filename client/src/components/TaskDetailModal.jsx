@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { updateTask, deleteTask } from '../services/taskService';
 import { useAuth } from '../context/AuthContext';
+import ConfirmDialog from './ConfirmDialog';
 
 function TaskDetailModal({ task: initialTask, team, onClose, onUpdate }) {
   const { user } = useAuth();
@@ -16,6 +17,17 @@ function TaskDetailModal({ task: initialTask, team, onClose, onUpdate }) {
 
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const isMemberOrManager = 
     team.managerId?._id === user?._id || 
@@ -56,9 +68,13 @@ function TaskDetailModal({ task: initialTask, team, onClose, onUpdate }) {
     }
   };
 
-  const handleDeleteTask = async () => {
+  const handleDeleteTask = () => {
     if (!canDelete) return;
-    if (!window.confirm('Are you sure you want to delete this task?')) return;
+    setShowConfirmDelete(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setShowConfirmDelete(false);
     try {
       setSaving(true);
       await deleteTask(task._id);
@@ -72,7 +88,7 @@ function TaskDetailModal({ task: initialTask, team, onClose, onUpdate }) {
 
   return (
     <div className="modal-backdrop">
-      <div className="modal-content" style={{ maxWidth: '600px' }}>
+      <div className="modal-content modal-content--wide">
         <div className="modal-header">
           <h2 className="modal-title">Task Details</h2>
           <button type="button" className="modal-close" onClick={onClose}>
@@ -80,7 +96,7 @@ function TaskDetailModal({ task: initialTask, team, onClose, onUpdate }) {
           </button>
         </div>
 
-        <form onSubmit={handleSaveTask} className="auth-form" style={{ gap: 'var(--space-4)' }}>
+        <form onSubmit={handleSaveTask} className="form-stack">
           <div className="form-group">
             <label className="form-label" htmlFor="editTitle">Title</label>
             <input
@@ -108,7 +124,7 @@ function TaskDetailModal({ task: initialTask, team, onClose, onUpdate }) {
             />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+          <div className="form-grid">
             <div className="form-group">
               <label className="form-label" htmlFor="editStatus">Status</label>
               <select
@@ -142,7 +158,7 @@ function TaskDetailModal({ task: initialTask, team, onClose, onUpdate }) {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+          <div className="form-grid">
             <div className="form-group">
               <label className="form-label" htmlFor="editAssignee">Assignee</label>
               <select
@@ -185,28 +201,38 @@ function TaskDetailModal({ task: initialTask, team, onClose, onUpdate }) {
 
           {saveError && <div className="auth-error">{saveError}</div>}
           {!isMemberOrManager && (
-            <div style={{ fontSize: 'var(--text-caption)', color: 'var(--color-text-muted)', marginTop: 'var(--space-2)' }}>
+            <div className="form-help-text" style={{ marginTop: 'var(--space-2)' }}>
               * You are viewing this task in read-only mode because you do not belong to this team.
             </div>
           )}
 
           <div className="modal-actions" style={{ marginTop: 'var(--space-4)' }}>
-            <button type="button" className="btn-secondary" onClick={onClose} disabled={saving}>
+            <button type="button" className="btn btn-secondary" onClick={onClose} disabled={saving}>
               Close
             </button>
             {isMemberOrManager && (
-              <button type="submit" className="btn-primary" disabled={saving}>
+              <button type="submit" className="btn btn-primary" disabled={saving}>
                 Save Changes
               </button>
             )}
             {canDelete && (
-              <button type="button" className="btn-danger" onClick={handleDeleteTask} disabled={saving}>
+              <button type="button" className="btn btn-danger" onClick={handleDeleteTask} disabled={saving}>
                 Delete Task
               </button>
             )}
           </div>
         </form>
       </div>
+
+      <ConfirmDialog
+        isOpen={showConfirmDelete}
+        title="Delete Task"
+        message="Are you sure you want to delete this task? This action cannot be undone."
+        confirmLabel="Delete Task"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={() => setShowConfirmDelete(false)}
+      />
     </div>
   );
 }
