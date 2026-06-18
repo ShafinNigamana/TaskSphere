@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import {
   DndContext,
   DragOverlay,
@@ -21,6 +21,7 @@ import { searchUsers } from '../../services/userService';
 import { useAuth } from '../../context/AuthContext';
 import ActivityFeed from '../../components/ActivityFeed';
 import TaskDetailModal from '../../components/TaskDetailModal';
+import { KanbanSkeleton } from '../../components/Skeleton';
 
 // Column definitions — maps to Task model status enum
 const COLUMNS = [
@@ -52,7 +53,7 @@ function getInitials(task) {
 }
 
 function formatDueDate(dateString) {
-  if (!dateString) return 'No due date';
+  if (!dateString) return '—';
   const date = new Date(dateString);
   return `Due ${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 }
@@ -90,10 +91,17 @@ function SortableTaskCard({ task, onClick }) {
     <div
       ref={setNodeRef}
       style={style}
-      className={`kanban-card ${isDragging ? 'kanban-card--dragging' : ''}`}
+      className={`kanban-card kanban-card--priority-${task.priority || 'medium'} ${isDragging ? 'kanban-card--dragging' : ''}`}
       {...attributes}
       {...listeners}
       onClick={onClick}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onClick();
+        }
+      }}
     >
       <TaskCardContent task={task} />
     </div>
@@ -113,7 +121,7 @@ function TaskCardContent({ task }) {
         <span className={`kanban-badge ${getPriorityClass(task.priority)}`}>
           {task.priority || 'medium'}
         </span>
-        <span className="kanban-badge kanban-badge--date">
+        <span className={`kanban-badge kanban-badge--date ${isOverdue(task) ? 'kanban-badge--overdue' : ''}`}>
           {formatDueDate(task.dueDate)}
         </span>
       </div>
@@ -133,7 +141,7 @@ function KanbanColumn({ column, tasks, isOver, onCardClick }) {
   return (
     <div className={`kanban-column ${isOver ? 'kanban-column--over' : ''}`}>
       <div className="kanban-column-header">
-        <span className="kanban-column-title">{column.title}</span>
+        <span className="kanban-column-title" data-status={column.id}>{column.title}</span>
         <span className="kanban-column-count">{tasks.length}</span>
       </div>
       <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
@@ -255,6 +263,18 @@ function TeamDetailPage() {
     }, 5000);
     return () => clearInterval(interval);
   }, [fetchTeamDetails, fetchTasks]);
+
+  useEffect(() => {
+    if (!showMemberModal && !showCreateTaskModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (showMemberModal) setShowMemberModal(false);
+        if (showCreateTaskModal) closeCreateTaskModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showMemberModal, showCreateTaskModal]);
 
   // ── Filtering ──
 
@@ -471,11 +491,7 @@ function TeamDetailPage() {
   // ── Render ──
 
   if (loading && tasks.length === 0) {
-    return (
-      <div className="kanban-container">
-        <p className="loading-text">Loading board...</p>
-      </div>
-    );
+    return <KanbanSkeleton />;
   }
 
   if (error) {
@@ -489,18 +505,23 @@ function TeamDetailPage() {
   return (
     <div className="kanban-container">
       <div className="kanban-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div className="kanban-header-top">
           <div>
+            <div className="breadcrumb">
+              <Link to="/teams" className="breadcrumb-link">Teams</Link>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-current">{team ? team.name : 'Board'}</span>
+            </div>
             <h1 className="kanban-title">{team ? team.name : 'Board'}</h1>
-            <p className="kanban-subtitle" style={{ marginTop: 'var(--space-1)', marginBottom: 'var(--space-2)' }}>
+            <p className="kanban-subtitle">
               {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'} across {COLUMNS.length} columns
             </p>
           </div>
-          <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <div className="kanban-header-actions">
             {user?.role === 'manager' && (
               <button 
                 type="button" 
-                className="btn-secondary"
+                className="btn btn-secondary"
                 onClick={() => {
                   if (team) {
                     setSelectedMembers(team.members || []);
@@ -514,7 +535,7 @@ function TeamDetailPage() {
             {isMemberOrManager && (
               <button 
                 type="button" 
-                className="btn-primary" 
+                className="btn btn-primary" 
                 onClick={() => setShowCreateTaskModal(true)}
               >
                 Create Task
@@ -522,7 +543,7 @@ function TeamDetailPage() {
             )}
           </div>
         </div>
-        <div className="kanban-filters" style={{ marginTop: 'var(--space-2)' }}>
+        <div className="kanban-filters">
           {FILTERS.map((filter) => (
             <button
               key={filter.id}
@@ -558,7 +579,7 @@ function TeamDetailPage() {
 
         <DragOverlay>
           {activeTask ? (
-            <div className="kanban-card kanban-card-overlay">
+            <div className={`kanban-card kanban-card-overlay kanban-card--priority-${activeTask.priority || 'medium'}`}>
               <TaskCardContent task={activeTask} />
             </div>
           ) : null}
@@ -592,7 +613,7 @@ function TeamDetailPage() {
               </button>
             </div>
 
-            <form onSubmit={handleUpdateRoster} className="auth-form" style={{ gap: 'var(--space-4)' }}>
+            <form onSubmit={handleUpdateRoster} className="form-stack">
               <div className="form-group">
                 <label className="form-label" htmlFor="memberSearch">Search Members</label>
                 <input
@@ -623,7 +644,7 @@ function TeamDetailPage() {
               <div className="form-group">
                 <label className="form-label">Team Members</label>
                 {selectedMembers.length === 0 ? (
-                  <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-text-muted)', margin: 0 }}>No members in this team.</p>
+                  <p className="form-help-text">No members in this team.</p>
                 ) : (
                   <div className="selected-members-list">
                     {selectedMembers.map((m) => (
@@ -647,14 +668,14 @@ function TeamDetailPage() {
               <div className="modal-actions">
                 <button 
                   type="button" 
-                  className="btn-secondary" 
+                  className="btn btn-secondary" 
                   onClick={() => setShowMemberModal(false)}
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  className="btn-primary"
+                  className="btn btn-primary"
                 >
                   Save Changes
                 </button>
@@ -679,9 +700,9 @@ function TeamDetailPage() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateTaskSubmit} className="auth-form" style={{ gap: 'var(--space-4)' }}>
+            <form onSubmit={handleCreateTaskSubmit} className="form-stack">
               <div className="form-group">
-                <label className="form-label" htmlFor="taskTitle">Title <span style={{ color: 'var(--color-status-todo)' }}>*</span></label>
+                <label className="form-label" htmlFor="taskTitle">Title <span className="form-required">*</span></label>
                 <input
                   type="text"
                   id="taskTitle"
@@ -702,8 +723,7 @@ function TeamDetailPage() {
                   value={taskForm.description}
                   onChange={handleTaskFormChange}
                   placeholder="Task description..."
-                  className="form-input"
-                  style={{ minHeight: '80px', resize: 'vertical' }}
+                  className="form-input form-textarea"
                 />
               </div>
 
@@ -732,7 +752,7 @@ function TeamDetailPage() {
                 </select>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-4)' }}>
+              <div className="form-grid">
                 <div className="form-group">
                   <label className="form-label" htmlFor="taskStatus">Status</label>
                   <select
@@ -781,14 +801,14 @@ function TeamDetailPage() {
               <div className="modal-actions">
                 <button 
                   type="button" 
-                  className="btn-secondary" 
+                  className="btn btn-secondary" 
                   onClick={closeCreateTaskModal}
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  className="btn-primary"
+                  className="btn btn-primary"
                   disabled={loading}
                 >
                   Create Task

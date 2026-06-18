@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getTasks } from '../../services/taskService';
+import { Skeleton } from '../../components/Skeleton';
+import EmptyState from '../../components/EmptyState';
 
 function TasksPage() {
   const [tasks, setTasks] = useState([]);
@@ -25,11 +27,11 @@ function TasksPage() {
 
   const getStatusColor = (status) => {
     const colors = {
-      'todo': '#b91c1c',
-      'in-progress': '#a16207',
-      'done': '#15803d',
+      'todo': 'var(--color-status-todo)',
+      'in-progress': 'var(--color-status-inprogress)',
+      'done': 'var(--color-status-done)',
     };
-    return colors[status] || '#737373';
+    return colors[status] || 'var(--color-text-muted)';
   };
 
   const formatDate = (dateString) => {
@@ -41,7 +43,18 @@ function TasksPage() {
   if (loading) {
     return (
       <div className="dashboard-container">
-        <p className="loading-text">Loading tasks...</p>
+        <div className="dashboard-header" style={{ marginBottom: 'var(--space-10)' }}>
+          <Skeleton width="120px" height="32px" style={{ marginBottom: '8px' }} />
+          <Skeleton width="200px" height="18px" />
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1px', backgroundColor: 'var(--color-border)', borderRadius: 'var(--radius-md)', overflow: 'hidden' }}>
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} style={{ padding: '12px 16px', background: 'var(--color-surface)' }}>
+              <Skeleton width="220px" height="16px" style={{ marginBottom: '8px' }} />
+              <Skeleton width="80px" height="12px" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -64,9 +77,11 @@ function TasksPage() {
       </div>
 
       {tasks.length === 0 ? (
-        <div className="empty-card">
-          <p>No tasks available.</p>
-        </div>
+        <EmptyState 
+          type="tasks" 
+          title="No tasks yet" 
+          description="Tasks will appear when you join a team." 
+        />
       ) : (
         <div className="dashboard-section">
           <h2 className="section-title">All Tasks</h2>

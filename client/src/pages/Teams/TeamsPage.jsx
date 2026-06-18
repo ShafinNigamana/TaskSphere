@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { getTeams, createTeam } from '../../services/teamService';
 import { searchUsers } from '../../services/userService';
 import { useAuth } from '../../context/AuthContext';
+import { TeamsSkeleton } from '../../components/Skeleton';
+import EmptyState from '../../components/EmptyState';
 
 function TeamsPage() {
   const [teams, setTeams] = useState([]);
@@ -64,6 +66,17 @@ function TeamsPage() {
     return () => clearTimeout(timer);
   }, [searchQuery, selectedMembers]);
 
+  useEffect(() => {
+    if (!showModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        closeModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showModal]);
+
   const handleAddMember = (member) => {
     setSelectedMembers((prev) => [...prev, member]);
     setSearchQuery('');
@@ -106,11 +119,7 @@ function TeamsPage() {
   };
 
   if (loading && teams.length === 0) {
-    return (
-      <div className="teams-container">
-        <p className="loading-text">Loading teams...</p>
-      </div>
-    );
+    return <TeamsSkeleton />;
   }
 
   if (error) {
@@ -129,7 +138,7 @@ function TeamsPage() {
   return (
     <div className="teams-container">
       {/* Header */}
-      <div className="teams-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div className="teams-header">
         <div>
           <h1 className="teams-title">Teams</h1>
           <p className="teams-subtitle">Manage user groups and team collaboration</p>
@@ -137,7 +146,7 @@ function TeamsPage() {
         {user?.role === 'manager' && (
           <button 
             type="button" 
-            className="btn-primary" 
+            className="btn btn-primary" 
             onClick={() => setShowModal(true)}
           >
             Create Team
@@ -147,9 +156,13 @@ function TeamsPage() {
 
       {/* Teams Grid */}
       {teams.length === 0 ? (
-        <div className="empty-card">
-          <p>No teams available.</p>
-        </div>
+        <EmptyState 
+          type="teams" 
+          title="No teams yet" 
+          description="You're not part of any teams yet." 
+          actionLabel={user?.role === 'manager' ? "Create Team" : undefined} 
+          onAction={user?.role === 'manager' ? () => setShowModal(true) : undefined} 
+        />
       ) : (
         <div className="teams-grid">
           {teams.map((team) => (
@@ -168,7 +181,7 @@ function TeamsPage() {
                 </div>
               </div>
               <button 
-                className="team-button"
+                className="btn btn-primary team-card-btn"
                 onClick={() => navigate(`/teams/${team._id}`)}
               >
                 View Details
@@ -193,7 +206,7 @@ function TeamsPage() {
               </button>
             </div>
 
-            <form onSubmit={handleCreateTeam} className="auth-form" style={{ gap: 'var(--space-4)' }}>
+            <form onSubmit={handleCreateTeam} className="form-stack">
               <div className="form-group">
                 <label className="form-label" htmlFor="teamName">Team Name</label>
                 <input
@@ -237,7 +250,7 @@ function TeamsPage() {
               <div className="form-group">
                 <label className="form-label">Selected Members</label>
                 {selectedMembers.length === 0 ? (
-                  <p style={{ fontSize: 'var(--text-caption)', color: 'var(--color-text-muted)', margin: 0 }}>No members selected yet.</p>
+                  <p className="form-help-text">No members selected yet.</p>
                 ) : (
                   <div className="selected-members-list">
                     {selectedMembers.map((m) => (
@@ -261,14 +274,14 @@ function TeamsPage() {
               <div className="modal-actions">
                 <button 
                   type="button" 
-                  className="btn-secondary" 
+                  className="btn btn-secondary" 
                   onClick={closeModal}
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
-                  className="btn-primary" 
+                  className="btn btn-primary" 
                   disabled={!newTeamName.trim()}
                 >
                   Create
