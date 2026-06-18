@@ -1,6 +1,6 @@
 <div align="center">
 
-# TaskSphere 🚀
+<img src="./docs/screenshots/logo.png" alt="TaskSphere" width="280" />
 
 **A Team Collaboration & Task Management Platform**
 
