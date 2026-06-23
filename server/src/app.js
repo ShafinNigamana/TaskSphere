@@ -9,6 +9,7 @@ import taskRoutes from './routes/taskRoutes.js';
 import auditRoutes from './routes/auditRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import contactRoutes from './routes/contactRoutes.js';
 import { generalLimiter, authLimiter } from './middleware/rateLimiter.js';
 
 const app = express();
@@ -32,6 +33,7 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/audit', auditRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/contacts', contactRoutes);
 
 app.get('/', (req, res) => {
   res.json({
