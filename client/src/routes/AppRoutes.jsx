@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
 import LoginPage from "../pages/Login/LoginPage";
 import SignupPage from "../pages/Signup/SignupPage";
 import DashboardPage from "../pages/Dashboard/DashboardPage";
@@ -8,14 +8,24 @@ import TasksPage from "../pages/Tasks/TasksPage";
 import TaskDetailPage from "../pages/Tasks/TaskDetailPage";
 import HealthPage from "../pages/System/HealthPage";
 import MainLayout from "../layouts/MainLayout";
+import PublicLayout from "../layouts/PublicLayout";
+import LandingPage from "../pages/Landing/LandingPage";
+import AboutPage from "../pages/About/AboutPage";
+import ContactPage from "../pages/Contact/ContactPage";
 import ProtectedRoute from "../components/ProtectedRoute";
 import ReportsPage from "../pages/Reports/ReportsPage";
 
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public Routes */}
-      <Route path="/" element={<Navigate to="/login" replace />} />
+      {/* Public Marketing Routes with Public Layout */}
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<LandingPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
+      </Route>
+
+      {/* Public Auth Routes */}
       <Route path="/login" element={<LoginPage />} />
       <Route path="/signup" element={<SignupPage />} />
       <Route path="/health" element={<HealthPage />} />
