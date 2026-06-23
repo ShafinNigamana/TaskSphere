@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
+import { Send, RotateCcw } from 'lucide-react';
 import { sendContactMessage } from '../../services/contactService';
 
 export default function ContactPage() {
@@ -135,7 +136,7 @@ export default function ContactPage() {
                   disabled={loading}
                   className="btn btn-primary btn-block contact-submit-btn"
                 >
-                  {loading ? 'Sending message...' : 'Submit inquiry'}
+                  {loading ? 'Sending message...' : <><Send size={15} /> Submit inquiry</>}
                 </button>
               </form>
             </motion.div>
@@ -181,7 +182,7 @@ export default function ContactPage() {
                 onClick={() => setSubmitted(false)}
                 className="btn btn-secondary btn-sm"
               >
-                Send another message
+                <RotateCcw size={14} /> Send another message
               </button>
             </motion.div>
           )}
