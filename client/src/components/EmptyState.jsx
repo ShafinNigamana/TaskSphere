@@ -1,4 +1,3 @@
-import React from 'react';
 
 /**
  * Reusable empty state component with monochrome outline icon, title, description, and optional action button.
