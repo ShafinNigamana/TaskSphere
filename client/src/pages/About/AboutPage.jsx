@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Lock, BookOpenCheck } from 'lucide-react';
 
 export default function AboutPage() {
   return (
@@ -50,12 +51,14 @@ export default function AboutPage() {
             className="about-values-col"
           >
             <div className="value-card">
+              <div className="value-card-icon"><Lock size={20} strokeWidth={1.8} /></div>
               <h4>Strict Scoping Boundaries</h4>
               <p>
                 Information separation is key to focus. Managers only see what is relevant to their own teams, keeping developers focused and managers protected from cross-workspace leaks.
               </p>
             </div>
             <div className="value-card">
+              <div className="value-card-icon"><BookOpenCheck size={20} strokeWidth={1.8} /></div>
               <h4>Compliance by Design</h4>
               <p>
                 Every drag-and-drop card transition is written directly to a relational ledger, ensuring you have complete activity logs when compiling reports or exporting compliance spreadsheets.
