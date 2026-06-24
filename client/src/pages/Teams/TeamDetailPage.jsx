@@ -181,6 +181,11 @@ function TeamDetailPage() {
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [memberModalError, setMemberModalError] = useState(null);
 
+  const showMemberModalRef = useRef(showMemberModal);
+  useEffect(() => {
+    showMemberModalRef.current = showMemberModal;
+  }, [showMemberModal]);
+
   // Task creation states
   const [showCreateTaskModal, setShowCreateTaskModal] = useState(false);
   const [taskForm, setTaskForm] = useState({
@@ -225,7 +230,9 @@ function TeamDetailPage() {
         return;
       }
       setTeam(currentTeam);
-      setSelectedMembers(currentTeam.members || []);
+      if (!showMemberModalRef.current) {
+        setSelectedMembers(currentTeam.members || []);
+      }
     } catch {
       setError("Failed to load team details");
     }
