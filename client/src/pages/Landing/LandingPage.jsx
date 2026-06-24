@@ -551,7 +551,7 @@ export default function LandingPage() {
               />
             </div>
 
-            <DragOverlay>
+            <DragOverlay dropAnimation={null}>
               {activeTask ? (
                 <SandboxTaskCardOverlay task={activeTask} />
               ) : null}
