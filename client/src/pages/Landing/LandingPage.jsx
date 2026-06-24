@@ -142,28 +142,25 @@ function SandboxColumn({ status, title, tasks, isOver, onDeleteTask }) {
       </div>
       <div className="sandbox-task-list">
         <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-          <AnimatePresence initial={false}>
-            {tasks.length === 0 ? (
-              <motion.div
-                key="empty"
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                className="sandbox-empty-placeholder"
-                style={{ padding: 'var(--space-4) 0', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 'var(--text-secondary)' }}
-              >
-                No tasks
-              </motion.div>
-            ) : (
-              tasks.map(task => (
-                <SortableSandboxTaskCard
-                  key={task.id}
-                  task={task}
-                  onDelete={() => onDeleteTask(task.id)}
-                />
-              ))
-            )}
-          </AnimatePresence>
+          {tasks.length === 0 ? (
+            <motion.div
+              key="empty"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="sandbox-empty-placeholder"
+              style={{ padding: 'var(--space-4) 0', textAlign: 'center', color: 'var(--color-text-muted)', fontSize: 'var(--text-secondary)' }}
+            >
+              No tasks
+            </motion.div>
+          ) : (
+            tasks.map(task => (
+              <SortableSandboxTaskCard
+                key={task.id}
+                task={task}
+                onDelete={() => onDeleteTask(task.id)}
+              />
+            ))
+          )}
         </SortableContext>
       </div>
     </div>
