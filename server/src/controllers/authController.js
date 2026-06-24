@@ -16,6 +16,31 @@ export const register = async (req, res) => {
       return res.status(400).json({ message: 'Name, email, and password are required' });
     }
 
+    /* ── Input sanitization & validation ── */
+    const trimmedName = name.trim();
+    if (trimmedName.length < 2 || trimmedName.length > 50) {
+      return res.status(400).json({ message: 'Name must be between 2 and 50 characters' });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: 'Please provide a valid email address' });
+    }
+
+    /* ── Password policy ── */
+    if (password.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters' });
+    }
+    if (!/[A-Z]/.test(password)) {
+      return res.status(400).json({ message: 'Password must contain at least one uppercase letter' });
+    }
+    if (!/\d/.test(password)) {
+      return res.status(400).json({ message: 'Password must contain at least one number' });
+    }
+    if (!/[^A-Za-z0-9]/.test(password)) {
+      return res.status(400).json({ message: 'Password must contain at least one special character' });
+    }
+
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res.status(409).json({ message: 'Email already exists' });
