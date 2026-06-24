@@ -137,12 +137,12 @@ function TeamsPage() {
   };
 
   return (
-    <div className="max-w-6xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="premium-page-wrapper">
       {/* Header */}
-      <div className="flex justify-between items-center mb-10">
-        <div>
-          <h1 className="text-3xl font-extrabold tracking-tight text-neutral-900 leading-none">Teams</h1>
-          <p className="mt-2 text-sm text-neutral-500">Manage user groups and team collaboration</p>
+      <div className="premium-page-header">
+        <div className="premium-page-header-text">
+          <h1>Teams</h1>
+          <p>Manage user groups and team collaboration</p>
         </div>
         {user?.role === 'manager' && (
           <button 
@@ -165,27 +165,27 @@ function TeamsPage() {
           onAction={user?.role === 'manager' ? () => setShowModal(true) : undefined} 
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="teams-list-grid">
           {teams.map((team) => (
             <div 
               key={team._id} 
-              className="group bg-white border border-neutral-200/80 rounded-2xl p-6 shadow-sm flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 hover:shadow-md hover:border-neutral-300"
+              className="teams-list-card"
             >
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="p-2 bg-neutral-50 rounded-lg group-hover:bg-neutral-100/80 transition-colors">
+              <div>
+                <div className="teams-card-header">
+                  <div className="teams-card-icon-wrapper">
                     <Users size={20} className="text-neutral-700" />
                   </div>
-                  <h3 className="text-base font-bold text-neutral-900 group-hover:text-black">{team.name}</h3>
+                  <h3 className="teams-card-title">{team.name}</h3>
                 </div>
-                <div className="space-y-2 text-xs text-neutral-500">
-                  <div className="flex justify-between items-center py-1.5 border-b border-neutral-100">
-                    <span className="font-medium text-neutral-400">Members</span>
-                    <span className="font-semibold text-neutral-800 bg-neutral-100 px-2 py-0.5 rounded-full">{team.members ? team.members.length : 0}</span>
+                <div className="teams-card-info-list">
+                  <div className="teams-info-row border-bottom">
+                    <span className="teams-row-label">Members</span>
+                    <span className="teams-members-badge">{team.members ? team.members.length : 0}</span>
                   </div>
-                  <div className="flex justify-between items-center py-1.5">
-                    <span className="font-medium text-neutral-400">Created</span>
-                    <span className="text-neutral-700 flex items-center gap-1">
+                  <div className="teams-info-row">
+                    <span className="teams-row-label">Created</span>
+                    <span className="teams-row-value" style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <Calendar size={12} />
                       {formatDate(team.createdAt)}
                     </span>
@@ -193,11 +193,11 @@ function TeamsPage() {
                 </div>
               </div>
               <button 
-                className="w-full btn btn-primary flex items-center justify-center gap-1.5 mt-auto group"
+                className="btn btn-primary teams-card-action-btn"
                 onClick={() => navigate(`/teams/${team._id}`)}
               >
                 View Workspace
-                <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+                <ArrowRight size={14} style={{ marginLeft: '4px' }} />
               </button>
             </div>
           ))}

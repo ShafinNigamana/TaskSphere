@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef, memo } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import {
   DndContext,
@@ -103,14 +103,14 @@ function SortableTaskCard({ task, onClick }) {
         }
       }}
     >
-      <TaskCardContent task={task} />
+      <MemoizedTaskCardContent task={task} />
     </div>
   );
 }
 
 // ─── TaskCardContent (shared between card and overlay) ─────
 
-function TaskCardContent({ task }) {
+const MemoizedTaskCardContent = memo(function TaskCardContent({ task }) {
   return (
     <>
       <div className="kanban-card-top">
@@ -127,14 +127,14 @@ function TaskCardContent({ task }) {
       </div>
     </>
   );
-}
+});
 
 // ─── KanbanColumn ──────────────────────────────────────────
 
-function KanbanColumn({ column, tasks, isOver, onCardClick }) {
+function KanbanColumn({ column, tasks, onCardClick }) {
   const taskIds = tasks.map((t) => t._id);
 
-  const { setNodeRef } = useDroppable({
+  const { isOver, setNodeRef } = useDroppable({
     id: column.id,
   });
 
@@ -169,7 +169,6 @@ function TeamDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [activeTask, setActiveTask] = useState(null);
-  const [overColumnId, setOverColumnId] = useState(null);
   const [activeFilter, setActiveFilter] = useState('all');
 
   // Task details modal state
@@ -433,17 +432,10 @@ function TeamDetailPage() {
     setActiveTask(task || null);
   }
 
-  function handleDragOver(event) {
-    if (!isMemberOrManager) return;
-    const targetCol = getTargetColumn(event.over);
-    setOverColumnId(targetCol);
-  }
-
   async function handleDragEnd(event) {
     if (!isMemberOrManager) return;
     isDragging.current = false;
     setActiveTask(null);
-    setOverColumnId(null);
 
     const { active, over } = event;
     if (!over) return;
@@ -479,7 +471,6 @@ function TeamDetailPage() {
   function handleDragCancel() {
     isDragging.current = false;
     setActiveTask(null);
-    setOverColumnId(null);
   }
 
   // ── Group tasks by status (uses filtered set) ──
@@ -561,7 +552,6 @@ function TeamDetailPage() {
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragStart={handleDragStart}
-        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
@@ -571,7 +561,6 @@ function TeamDetailPage() {
               key={column.id}
               column={column}
               tasks={getTasksForColumn(column.id)}
-              isOver={overColumnId === column.id}
               onCardClick={(task) => setSelectedTask(task)}
             />
           ))}
@@ -580,7 +569,7 @@ function TeamDetailPage() {
         <DragOverlay>
           {activeTask ? (
             <div className={`kanban-card kanban-card-overlay kanban-card--priority-${activeTask.priority || 'medium'}`}>
-              <TaskCardContent task={activeTask} />
+              <MemoizedTaskCardContent task={activeTask} />
             </div>
           ) : null}
         </DragOverlay>
